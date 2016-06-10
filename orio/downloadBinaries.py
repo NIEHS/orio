@@ -9,6 +9,21 @@ import requests
 REQUIRED_SOFTWARE = ('bigWigAverageOverBed', 'validateFiles', )
 
 
+def get_bin_root():
+    root_dl = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'bin')
+    if not os.path.exists(root_dl):
+        os.makedirs(root_dl)
+    return root_dl
+
+
+def binaries_exist():
+    root_dl = get_bin_root()
+    return all([
+        os.path.exists(os.path.join(root_dl, fn))
+        for fn in REQUIRED_SOFTWARE
+    ])
+
+
 def get_root_url():
     system = platform.system()
     if system == 'Darwin':
@@ -27,12 +42,10 @@ def download_ucsc_tools():
         raise OSError('64-bit architecture required.')
 
     root_url = get_root_url()
-
-    root_dl = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'bin')
-    if not os.path.exists(root_dl):
-        os.makedirs(root_dl)
+    root_dl = get_bin_root()
 
     # download required software and place in appropriate location
+    sys.stdout.write("Downloading UCSC binaries for ORIO\n")
     for fn in REQUIRED_SOFTWARE:
         url = os.path.join(root_url, fn)
         path = os.path.join(root_dl, fn)
@@ -47,7 +60,7 @@ def download_ucsc_tools():
         else:
             sys.stderr.write("URL returned a non-200 status\n")
 
-    sys.stdout.write("Downloads complete!")
+    sys.stdout.write("Downloads complete!\n")
 
 if __name__ == '__main__':
     download_ucsc_tools()
