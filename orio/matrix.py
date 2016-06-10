@@ -6,7 +6,8 @@ import tempfile
 from subprocess import call
 from six import string_types
 
-root = os.path.abspath(os.path.dirname(os.path.abspath(__file__)))
+root = os.path.dirname(os.path.abspath(__file__))
+root = os.path.abspath(os.path.join(root, 'bin'))
 
 
 class BedMatrix(object):

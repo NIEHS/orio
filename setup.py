@@ -31,9 +31,10 @@ setup(
     license='TBD',
     packages=find_packages(exclude=['tests']),
     install_requires=[
-        'docopt>=0.6.2',
-        'scipy>=0.17.0',
-        'numpy>=1.11.0',
+        'docopt',
+        'scipy',
+        'numpy',
+        'requests'
     ],
     include_package_data=True,
     zip_safe=False

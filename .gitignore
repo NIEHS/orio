@@ -14,3 +14,5 @@
 
 # py.test cache
 .cache/*
+
+orio/bin/*
