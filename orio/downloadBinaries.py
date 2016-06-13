@@ -3,6 +3,7 @@ import sys
 import platform
 import shutil
 
+from clint.textui import progress
 import requests
 
 
@@ -54,8 +55,12 @@ def download_ucsc_tools():
         r = requests.get(url, stream=True)
         if r.status_code == 200:
             with open(path, 'wb') as f:
-                r.raw.decode_content = True
-                shutil.copyfileobj(r.raw, f)
+                total_length = int(r.headers.get('content-length'))
+                for chunk in progress.bar(r.iter_content(
+                        chunk_size=1024), expected_size=(total_length/1024) + 1):
+                    if chunk:
+                        f.write(chunk)
+                        f.flush()
                 os.chmod(path, 0o751)
         else:
             sys.stderr.write("URL returned a non-200 status\n")

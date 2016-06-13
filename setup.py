@@ -31,6 +31,8 @@ setup(
     license='TBD',
     packages=find_packages(exclude=['tests']),
     install_requires=[
+        'click',
+        'clint',
         'docopt',
         'scipy',
         'numpy',
