@@ -1,6 +1,8 @@
 import os
 from abc import abstractmethod
 
+from .. import utils
+
 
 class Validator(object):
 
@@ -26,21 +28,14 @@ class Validator(object):
 
 
 def get_validateFiles_path():
-    path = os.path.abspath(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            os.path.pardir,
-            'validateFiles'
-        )
-    )
+    path = os.path.join(utils.get_bin_path(), 'validateFiles')
     if not os.path.exists(path):
         raise IOError('validateFiles not found, expected {}'.format(path))
     return path
 
 
 def get_chromosome_size_path(genome):
-    root = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(root, 'data', genome + '.chromSizes.txt')
+    path = os.path.join(utils.get_data_path(), genome + '.chromSizes.txt')
     if not os.path.exists(path):
         raise IOError('File not found: {0}'.format(path))
     return path

@@ -1,24 +1,18 @@
 import os
 import sys
 import platform
-import shutil
 
 from clint.textui import progress
 import requests
+
+from . import utils
 
 
 REQUIRED_SOFTWARE = ('bigWigAverageOverBed', 'validateFiles', )
 
 
-def get_bin_root():
-    root_dl = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'bin')
-    if not os.path.exists(root_dl):
-        os.makedirs(root_dl)
-    return root_dl
-
-
 def binaries_exist():
-    root_dl = get_bin_root()
+    root_dl = utils.get_bin_path()
     return all([
         os.path.exists(os.path.join(root_dl, fn))
         for fn in REQUIRED_SOFTWARE

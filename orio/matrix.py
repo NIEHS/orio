@@ -6,14 +6,14 @@ import tempfile
 from subprocess import call
 from six import string_types
 
-root = os.path.dirname(os.path.abspath(__file__))
-root = os.path.abspath(os.path.join(root, 'bin'))
+from . import utils
 
 
 class BedMatrix(object):
 
     ANCHOR_OPTIONS = ('start', 'end', 'center')
-    bigWigAverageOverBed_path = os.path.join(root, "bigWigAverageOverBed")
+    bigWigAverageOverBed_path = os.path.join(
+        utils.get_bin_path(), "bigWigAverageOverBed")
 
     def __init__(self, bigwigs, feature_bed, output_matrix, anchor, bin_start,
                  bin_number, bin_size, opposite_strand_fn, stranded_bigwigs,

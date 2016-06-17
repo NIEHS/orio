@@ -1,6 +1,6 @@
 import pytest
 
-import orio
+from orio import utils
 from orio import assemblies
 
 
@@ -25,5 +25,5 @@ def test_get_assemblies():
 
 @pytest.mark.skip(reason="slow")
 def test_download_chromosome_sizes():
-    path = orio.get_data_path()
+    path = utils.get_data_path()
     assemblies.download_chromosome_sizes(path)
