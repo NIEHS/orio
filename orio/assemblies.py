@@ -1,5 +1,6 @@
-import pymysql
 import csv
+import pymysql
+import os
 
 
 def get_UCSC_cursor():
@@ -14,12 +15,7 @@ def get_UCSC_cursor():
 def get_databases():
     cursor = get_UCSC_cursor()
     cursor.execute('SHOW DATABASES')
-
-    dbs = []
-    for entry in cursor:
-        dbs.append(entry[0])
-
-    return dbs
+    return [entry[0] for entry in cursor]
 
 
 def get_available_assemblies():
@@ -45,15 +41,12 @@ def download_chromosome_sizes(path):
     for db in dbs:
         cursor = get_UCSC_cursor()
         try:
-            cursor.execute('SELECT chrom,size FROM {}.chromInfo'.format(db))
-        except pymysql.InternalError as err:
-            print("Error: {}".format(err))
-        except pymysql.ProgrammingError as err:
+            cursor.execute('SELECT chrom, size FROM {}.chromInfo'.format(db))
+        except (pymysql.InternalError, pymysql.ProgrammingError) as err:
             print("Error: {}".format(err))
         else:
             query_results = cursor.fetchall()
-
-            fp = open(path + db + '.chromSizes.txt', 'w')
-            chrom_sizes_file = csv.writer(fp, delimiter='\t')
-            chrom_sizes_file.writerows(query_results)
-            fp.close()
+            fn = os.path.join(path, '{}.chromSizes.txt'.format(db))
+            with open(fn, 'w') as f:
+                chrom_sizes_file = csv.writer(f, delimiter='\t')
+                chrom_sizes_file.writerows(query_results)
