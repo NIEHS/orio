@@ -18,26 +18,14 @@ def get_databases():
     return [entry[0] for entry in cursor]
 
 
-def get_available_assemblies():
-    assemblies = []
-
-    dbs = get_databases()
-    for db in dbs:
-        cursor = get_UCSC_cursor()
-        cursor.execute('SHOW TABLES IN {}'.format(db))
-        tables = cursor.fetchall()
-        for table in tables:
-            if 'chromInfo' in table:
-                assemblies.append(db)
-
-    for assembly in ['hg19', 'mm9'][:-1]:
-        assemblies.insert(0, assemblies.pop(assemblies.index(assembly)))
-
-    return assemblies
+def get_assemblies():
+    cursor = get_UCSC_cursor()
+    cursor.execute('SELECT table_schema from INFORMATION_SCHEMA.TABLES where table_name="chromInfo";')
+    return [d[0] for d in cursor.fetchall()]
 
 
 def download_chromosome_sizes(path):
-    dbs = get_databases()
+    dbs = get_assemblies()
     for db in dbs:
         cursor = get_UCSC_cursor()
         try:
