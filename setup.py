@@ -1,9 +1,13 @@
 import os
+import re
 import sys
 from setuptools import setup, find_packages
 
-from orio import __version__
 
+# get version from __init__, mirroring request library:
+with open('orio/__init__.py', 'r') as fd:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        fd.read(), re.MULTILINE).group(1)
 
 if sys.argv[-1] == 'publish_test':
     os.system('python setup.py sdist upload -r https://testpypi.python.org/pypi')
@@ -15,6 +19,11 @@ if sys.argv[-1] == 'publish_production':
     os.system('python setup.py bdist_wheel upload')
     sys.exit()
 
+if sys.argv[-1] == 'tag':
+    os.system("git tag -a %s -m 'version %s'" % (version, version))
+    os.system("git push --tags")
+    sys.exit()
+
 
 def readme():
     with open('README.rst') as f:
@@ -22,7 +31,7 @@ def readme():
 
 setup(
     name='orio',
-    version=__version__,
+    version=version,
     description='ORIO',
     long_description=readme(),
     url='https://github.com/shapiromatron/orio',
