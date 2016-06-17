@@ -16,3 +16,4 @@
 .cache/*
 
 orio/bin/*
+!orio/bin/.gitkeep
