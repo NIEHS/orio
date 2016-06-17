@@ -12,9 +12,9 @@ REQUIRED_SOFTWARE = ('bigWigAverageOverBed', 'validateFiles', )
 
 
 def binaries_exist():
-    root_dl = utils.get_bin_path()
+    root = utils.get_bin_path()
     return all([
-        os.path.exists(os.path.join(root_dl, fn))
+        os.path.exists(os.path.join(root, fn))
         for fn in REQUIRED_SOFTWARE
     ])
 
@@ -37,13 +37,13 @@ def download_ucsc_tools():
         raise OSError('64-bit architecture required.')
 
     root_url = get_root_url()
-    root_dl = get_bin_root()
+    root = utils.get_bin_path()
 
     # download required software and place in appropriate location
     sys.stdout.write("Downloading UCSC binaries for ORIO\n")
     for fn in REQUIRED_SOFTWARE:
         url = os.path.join(root_url, fn)
-        path = os.path.join(root_dl, fn)
+        path = os.path.join(root, fn)
 
         sys.stdout.write("Downloading: {}\n".format(url))
         r = requests.get(url, stream=True)
