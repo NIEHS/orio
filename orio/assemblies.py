@@ -24,7 +24,7 @@ def get_assemblies():
     return [d[0] for d in cursor.fetchall()]
 
 
-def download_chromosome_sizes(path):
+def download_chromosome_sizes(path, overwrite=False):
     dbs = get_assemblies()
     for db in dbs:
         cursor = get_UCSC_cursor()
@@ -35,6 +35,7 @@ def download_chromosome_sizes(path):
         else:
             query_results = cursor.fetchall()
             fn = os.path.join(path, '{}.chromSizes.txt'.format(db))
-            with open(fn, 'w') as f:
-                chrom_sizes_file = csv.writer(f, delimiter='\t')
-                chrom_sizes_file.writerows(query_results)
+            if overwrite or not os.path.isfile(fn):
+                with open(fn, 'w') as f:
+                    chrom_sizes_file = csv.writer(f, delimiter='\t')
+                    chrom_sizes_file.writerows(query_results)
