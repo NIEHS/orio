@@ -36,7 +36,8 @@ setup(
         'docopt',
         'scipy',
         'numpy',
-        'requests'
+        'requests',
+        'pymysql'
     ],
     include_package_data=True,
     zip_safe=False
