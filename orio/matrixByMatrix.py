@@ -287,6 +287,14 @@ class MatrixByMatrix():
             self.matrix_names, corr_matrix, self.sort_vector, bin_names)
 
     def performFeatureClustering(self):
+        def readMatrixOrder(dsc_rep_data):
+            matrix_order = []
+
+            for row in dsc_rep_data['rows']:
+                matrix_order.append(row['row_name'])
+
+            return matrix_order
+
         def createVectorMatrix(matrix_files, matrix_names):
             vector_matrix = None
             headers = None
@@ -364,23 +372,26 @@ class MatrixByMatrix():
 
             return norm_matrix, norm_kmeans
 
-        def getFCVectorData(vector_matrix, row_names, col_names, dsc_rep_data):
+        def getFCVectorData(vector_matrix, row_names, col_names, matrix_order):
             fc_vectors = dict({'vectors': {}})
 
-            if dsc_rep_data:
-                fc_vectors['col_names'] = dsc_rep_data['col_names']
+            # if dsc_rep_data and not sort_vector:
+            fc_vectors['col_names'] = matrix_order
 
-                for i, vector in enumerate(vector_matrix):
-                    reorder_vector = []
-                    for col_name in fc_vectors['col_names']:
-                        reorder_vector.append(
-                            vector_matrix[i][col_names.index(col_name)])
-                    fc_vectors['vectors'][row_names[i]] = reorder_vector
-            else:
-                fc_vectors['col_names'] = col_names
-
-                for i, vector in enumerate(vector_matrix):
-                    fc_vectors['vectors'][row_names[i]] = vector
+            for i, vector in enumerate(vector_matrix):
+                reorder_vector = []
+                for matrix in matrix_order:
+                    reorder_vector.append(
+                        vector_matrix[i][col_names.index(matrix)])
+                # for col_name in fc_vectors['col_names']:
+                    # reorder_vector.append(
+                    #     vector_matrix[i][col_names.index(col_name)])
+                fc_vectors['vectors'][row_names[i]] = reorder_vector
+            # else:
+            #     fc_vectors['col_names'] = col_names
+            #
+            #     for i, vector in enumerate(vector_matrix):
+            #         fc_vectors['vectors'][row_names[i]] = vector
 
             return fc_vectors
 
@@ -396,7 +407,7 @@ class MatrixByMatrix():
 
             return fc_clusters
 
-        def getFCCentroidData(kmeans_results, col_names, dsc_rep_data):
+        def getFCCentroidData(kmeans_results, col_names, matrix_order):
             fc_centroids = dict()
 
             for k in kmeans_results:
@@ -405,28 +416,32 @@ class MatrixByMatrix():
                 for cluster, centroid in \
                         enumerate(kmeans_results[k]['centroids']):
 
-                    if dsc_rep_data is None:
-                        fc_centroids[k][cluster+1] = centroid
-                    else:
-                        reorder_centroid = []
-                        for col_name in dsc_rep_data['col_names']:
-                            index = col_names.index(col_name)
-                            reorder_centroid.append(centroid[index])
-                        fc_centroids[k][cluster+1] = reorder_centroid
+                    # if dsc_rep_data or sort_vector:
+                    #     fc_centroids[k][cluster+1] = centroid
+                    # else:
+                    reorder_centroid = []
+                    # for col_name in dsc_rep_data['col_names']:
+                    #     index = col_names.index(col_name)
+                    #     reorder_centroid.append(centroid[index])
+                    for matrix in matrix_order:
+                        index = col_names.index(matrix)
+                        reorder_centroid.append(centroid[index])
+                    fc_centroids[k][cluster+1] = reorder_centroid
 
             return fc_centroids
 
+        matrix_order = readMatrixOrder(self.dsc_rep_data)
         vector_matrix, row_names, col_names = \
             createVectorMatrix(self.matrix_files, self.matrix_names)
         kmeans_results = performKMeansClustering(vector_matrix)
         vector_matrix, kmeans_results = normalizeKMeans(
             vector_matrix, kmeans_results)
         self.fc_vectors = getFCVectorData(
-            vector_matrix, row_names, col_names, self.dsc_rep_data)
+            vector_matrix, row_names, col_names, matrix_order)
         self.fc_clusters = getFCClusterData(
             kmeans_results, row_names)
         self.fc_centroids = getFCCentroidData(
-            kmeans_results, col_names, self.dsc_rep_data)
+            kmeans_results, col_names, matrix_order)
 
     def minimizeMatrixOutputs(self):
         def reduceRowData(data):
@@ -465,7 +480,7 @@ class MatrixByMatrix():
         self.readMatrixFiles()
         self.performDataSetClustering()
         self.performFeatureClustering()
-        self.minimizeMatrixOutputs()
+        # self.minimizeMatrixOutputs()
 
     def writeJson(self, fn):
         output_dict = {
