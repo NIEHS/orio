@@ -311,8 +311,7 @@ class MatrixByMatrix():
                     # ELSE, CHECK IF CONSISTENT
                     else:
                         if headers != next(f).strip().split():
-                            raise ValueError('headers not consistent across \
-                                matrices')
+                            raise ValueError('headers not consistent across matrices')  # noqa
 
                     # POPULATE TEMPORARY MATRIX
                     matrix_temp = []
@@ -332,8 +331,7 @@ class MatrixByMatrix():
                             row_name = entry[0]
                             row_values = numpy.array(entry[1:]).astype(float)
                             if row_name != row_names[i]:
-                                raise ValueError('Row names do not match across \
-                                    matrices')
+                                raise ValueError('Row names do not match across matrices')  # noqa
                             vector_matrix[i].append(numpy.sum(row_values))
 
             return vector_matrix, row_names, col_names
@@ -383,15 +381,7 @@ class MatrixByMatrix():
                 for matrix in matrix_order:
                     reorder_vector.append(
                         vector_matrix[i][col_names.index(matrix)])
-                # for col_name in fc_vectors['col_names']:
-                    # reorder_vector.append(
-                    #     vector_matrix[i][col_names.index(col_name)])
                 fc_vectors['vectors'][row_names[i]] = reorder_vector
-            # else:
-            #     fc_vectors['col_names'] = col_names
-            #
-            #     for i, vector in enumerate(vector_matrix):
-            #         fc_vectors['vectors'][row_names[i]] = vector
 
             return fc_vectors
 
@@ -413,16 +403,9 @@ class MatrixByMatrix():
             for k in kmeans_results:
                 fc_centroids[k] = dict()
 
-                for cluster, centroid in \
-                        enumerate(kmeans_results[k]['centroids']):
+                for cluster, centroid in enumerate(kmeans_results[k]['centroids']):  # noqa
 
-                    # if dsc_rep_data or sort_vector:
-                    #     fc_centroids[k][cluster+1] = centroid
-                    # else:
                     reorder_centroid = []
-                    # for col_name in dsc_rep_data['col_names']:
-                    #     index = col_names.index(col_name)
-                    #     reorder_centroid.append(centroid[index])
                     for matrix in matrix_order:
                         index = col_names.index(matrix)
                         reorder_centroid.append(centroid[index])
@@ -443,44 +426,10 @@ class MatrixByMatrix():
         self.fc_centroids = getFCCentroidData(
             kmeans_results, col_names, matrix_order)
 
-    def minimizeMatrixOutputs(self):
-        def reduceRowData(data):
-            for i, row in enumerate(data['rows']):
-                for j, value in enumerate(row['row_data']):
-                    data['rows'][i]['row_data'][j] = \
-                        '%.2f' % round(value, 2)
-
-        def reduceCoordData(data):
-            for i, coord in enumerate(data):
-                for j, value in enumerate(coord):
-                    data[i][j] = '%.2f' % round(value, 2)
-
-        def reduceVectorData(data):
-            for vector in data['vectors']:
-                for i, value in enumerate(data['vectors'][vector]):
-                    data['vectors'][vector][i] = \
-                        '%.2f' % round(value, 2)
-
-        def reduceCentroidData(data):
-            for k in data:
-                for cluster in data[k]:
-                    for i, value in enumerate(data[k][cluster]):
-                        data[k][cluster][i] = '%.2f' % round(value, 2)
-
-        reduceRowData(self.dsc_full_data)
-        reduceRowData(self.dsc_rep_data)
-
-        reduceCoordData(self.dsc_dendrogram['icoord'])
-        reduceCoordData(self.dsc_dendrogram['dcoord'])
-
-        reduceVectorData(self.fc_vectors)
-        reduceCentroidData(self.fc_centroids)
-
     def execute(self):
         self.readMatrixFiles()
         self.performDataSetClustering()
         self.performFeatureClustering()
-        # self.minimizeMatrixOutputs()
 
     def writeJson(self, fn):
         output_dict = {
