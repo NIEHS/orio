@@ -8,6 +8,7 @@ class Validator(object):
 
     def __init__(self):
         self.validation_errors = []
+        self.validation_warnings = []
 
     @property
     def is_valid(self):
@@ -23,8 +24,17 @@ class Validator(object):
     def add_errors(self, lst):
         self.validation_errors.extend(lst)
 
+    def add_warning(self, txt):
+        self.validation_warnings.append(txt)
+
+    def add_warnings(self, lst):
+        self.validation_warnings.extend(lst)
+
     def display_errors(self):
         return '\n'.join(set(self.validation_errors))
+
+    def display_warnings(self):
+        return '\n'.join(set(self.validation_warnings))
 
 
 def get_validateFiles_path():
