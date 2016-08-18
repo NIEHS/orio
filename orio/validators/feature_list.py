@@ -6,6 +6,9 @@ from .base import Validator, get_validateFiles_path
 
 class FeatureListValidator(Validator):
 
+    # Possible 'empty' names used in a BED file
+    DUMMY_NAMES = ['.']
+
     def __init__(self, feature_list, chrom_sizes_file):
 
         super().__init__()
@@ -66,6 +69,8 @@ class FeatureListValidator(Validator):
             for line in f:
                 if not (self.checkHeader(line)):
                     feature_name = line.strip().split()[3]
+                    if feature_name in self.DUMMY_NAMES:
+                        return
                     if feature_name in feature_names:
                         self.add_error(
                             'Duplicate feature name: {}'.format(feature_name))
