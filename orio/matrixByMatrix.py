@@ -32,7 +32,6 @@ def readGTF(annotation_file):
 
             tr_id = gtf_fields.pop('transcript_id')
             gene_id = gtf_fields.pop('gene_id')
-            gene_name = gtf_fields.pop('gene_name')
 
             if feature == 'exon':
                 if tr_id not in transcripts[chromosome]:
@@ -40,7 +39,6 @@ def readGTF(annotation_file):
                         'strand': strand,
                         'exons': [],
                         'gene_id': gene_id,
-                        'gene_name': gene_name,
                         }
                 transcripts[chromosome][tr_id]['exons'].append(
                     [int(start), int(end)]
@@ -136,10 +134,10 @@ def associateGenes(features, transcripts):
             if dist < shortest_dist:
                 shortest_dist = dist
                 closest_gene = \
-                    {transcripts[chromosome][transcript]['gene_name']}
+                    {transcripts[chromosome][transcript]['gene_id']}
             elif dist == shortest_dist:
                 closest_gene.add(
-                    transcripts[chromosome][transcript]['gene_name']
+                    transcripts[chromosome][transcript]['gene_id']
                 )
 
         gene_list.append(','.join(list(closest_gene)))
