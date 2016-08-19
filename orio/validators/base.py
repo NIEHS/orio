@@ -30,12 +30,19 @@ class Validator(object):
 def get_validateFiles_path():
     path = os.path.join(utils.get_bin_path(), 'validateFiles')
     if not os.path.exists(path):
-        raise IOError('validateFiles not found, expected {}'.format(path))
+        raise IOError('validateFiles not found, expected {}'.fo_rmat(path))
     return path
 
 
 def get_chromosome_size_path(genome):
     path = os.path.join(utils.get_data_path(), genome + '.chromSizes.txt')
+    if not os.path.exists(path):
+        raise IOError('File not found: {0}'.format(path))
+    return path
+
+
+def get_annotation_file_path(genome):
+    path = os.path.join(utils.get_data_path(), genome + '.gtf')
     if not os.path.exists(path):
         raise IOError('File not found: {0}'.format(path))
     return path
