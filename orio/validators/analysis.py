@@ -109,7 +109,7 @@ class AnalysisValidator(Validator):
                     if self.stranded_bed:
                         if bed_fields >= 6:  # Contains strand information?
                             strand = line.strip().split()[5]
-                            if strand != '+' or strand != '-':
+                            if not (strand == '+' or strand == '-'):
                                 self.add_error('Strand column is not valid.')
                         else:
                             self.add_error('BED file lacks strand column')
