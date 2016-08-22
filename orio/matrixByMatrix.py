@@ -9,13 +9,149 @@ from scipy.cluster.vq import kmeans2, whiten
 import copy
 import os
 import json
+import bisect
+from collections import defaultdict
+
+
+def readGTF(annotation_file):
+    transcripts = defaultdict(dict)
+
+    with open(annotation_file) as f:
+        for line in f:
+            chromosome, source, feature, start, end, score, strand, frame,\
+                attributes = line.strip().split('\t')
+
+            keys = []
+            values = []
+            gtf_fields = dict()
+            for entry in attributes.split(';')[:-1]:
+                keys.append(entry.split('\"')[0].strip())
+                values.append(entry.split('\"')[1].strip())
+            for key, value in zip(keys, values):
+                gtf_fields[key] = value
+
+            tr_id = gtf_fields.pop('transcript_id')
+            gene_id = gtf_fields.pop('gene_id')
+
+            if feature == 'exon':
+                if tr_id not in transcripts[chromosome]:
+                    transcripts[chromosome][tr_id] = {
+                        'strand': strand,
+                        'exons': [],
+                        'gene_id': gene_id,
+                        }
+                transcripts[chromosome][tr_id]['exons'].append(
+                    [int(start), int(end)]
+                    )
+
+    for chromosome in transcripts:
+        for transcript in transcripts[chromosome].values():
+            transcript['exons'].sort(key=lambda x: x[0])
+            transcript['start'] = int(transcript['exons'][0][0])
+            transcript['end'] = int(transcript['exons'][-1][1])
+
+    return transcripts
+
+
+def checkHeader(line):
+    # Check to see if line is header
+    if line == "\n":
+        return True
+    elif line[0] == "#":
+        return True
+    elif line.split()[0].lower() in ("track", "browser"):
+        return True
+    else:
+        return False
+
+
+def readBED(bed_fn):
+    bed_list = []
+    with open(bed_fn) as bed:
+        for line in bed:
+            if not checkHeader(line):
+                chromosome, start, end = line.strip().split()[0:3]
+                bed_list.append({
+                    'chromosome': chromosome,
+                    'start': int(start) + 1,
+                    'end': int(end),
+                })
+    return bed_list
+
+
+def associateGenes(features, transcripts):
+    gene_list = []
+
+    start_values = dict()
+    start_keys = dict()
+
+    end_values = dict()
+    end_keys = dict()
+
+    for chromosome in transcripts:
+        sort = \
+            sorted(transcripts[chromosome].items(),
+                   key=lambda x: x[1]['start'])
+        start_values[chromosome] = \
+            [r[1]['start'] for r in sort]
+        start_keys[chromosome] = \
+            [r[0] for r in sort]
+
+        sort = \
+            sorted(transcripts[chromosome].items(),
+                   key=lambda x: x[1]['end'])
+        end_values[chromosome] = \
+            [r[1]['end'] for r in sort]
+        end_keys[chromosome] = \
+            [r[0] for r in sort]
+
+    for feature in features:
+        chromosome = feature['chromosome']
+
+        left_bisect = bisect.bisect_left(
+            end_values[chromosome],
+            feature['start']
+        )
+        right_bisect = bisect.bisect_right(
+            start_values[chromosome],
+            feature['end']
+        )
+        left_index = max(left_bisect-1, 0)
+        right_index = min(right_bisect+1, len(start_values[chromosome]))
+
+        shortest_dist = float('Inf')
+        closest_gene = set()
+
+        for transcript in \
+                set(start_keys[chromosome][left_index:]) & \
+                set(end_keys[chromosome][0:right_index]):
+
+            dist = numpy.amax([
+                0,
+                feature['start'] - transcripts[chromosome][transcript]['end'],
+                transcripts[chromosome][transcript]['start'] - feature['end'],
+            ])
+            if dist < shortest_dist:
+                shortest_dist = dist
+                closest_gene = \
+                    {transcripts[chromosome][transcript]['gene_id']}
+            elif dist == shortest_dist:
+                closest_gene.add(
+                    transcripts[chromosome][transcript]['gene_id']
+                )
+
+        gene_list.append(','.join(list(closest_gene)))
+
+    return gene_list
 
 
 class MatrixByMatrix():
 
-    def __init__(self, matrix_list, window_start,
+    def __init__(self, feature_bed, matrix_list, annotation, window_start,
                  bin_number, bin_size, sort_vector):
 
+        self.feature_bed = feature_bed
+        self.annotation = annotation
         self.matrix_list = matrix_list
         self.window_start = window_start
         self.bin_number = bin_number
@@ -26,6 +162,8 @@ class MatrixByMatrix():
         assert isinstance(bin_number, int)
         assert isinstance(bin_size, int)
 
+        assert os.path.exists(self.annotation)
+        assert os.path.exists(self.feature_bed)
         if sort_vector:
             assert os.path.exists(self.sort_vector)
 
@@ -419,6 +557,7 @@ class MatrixByMatrix():
         kmeans_results = performKMeansClustering(vector_matrix)
         vector_matrix, kmeans_results = normalizeKMeans(
             vector_matrix, kmeans_results)
+
         self.fc_vectors = getFCVectorData(
             vector_matrix, row_names, col_names, matrix_order)
         self.fc_clusters = getFCClusterData(
@@ -426,10 +565,29 @@ class MatrixByMatrix():
         self.fc_centroids = getFCCentroidData(
             kmeans_results, col_names, matrix_order)
 
+    def readRowNames(self, matrix_fn):
+        row_names = []
+        with open(matrix_fn) as f:
+            next(f)
+            for line in f:
+                name = line.strip().split()[0]
+                row_names.append(name)
+        return row_names
+
+    def findClosestGene(self):
+        features = readBED(self.feature_bed)
+        genes = readGTF(self.annotation)
+
+        feature_list = self.readRowNames(self.matrix_list[0][2])
+        gene_list = associateGenes(features, genes)
+
+        self.feature_to_gene = {k: v for k, v in zip(feature_list, gene_list)}
+
     def execute(self):
         self.readMatrixFiles()
         self.performDataSetClustering()
         self.performFeatureClustering()
+        self.findClosestGene()
 
     def writeJson(self, fn):
         output_dict = {
@@ -439,20 +597,23 @@ class MatrixByMatrix():
             'fc_vectors': self.fc_vectors,
             'fc_clusters': self.fc_clusters,
             'fc_centroids': self.fc_centroids,
+            'feature_to_gene': self.feature_to_gene,
         }
         with open(fn, 'w') as f:
             json.dump(output_dict, f, separators=(",", ": "))
 
 
 @click.command()
+@click.argument('feature_bed', type=str)
 @click.argument('matrix_list_fn', type=str)
+@click.argument('annotation', type=str)
 @click.argument('window_start', type=int)
 @click.argument('bin_number', type=int)
 @click.argument('bin_size', type=int)
 @click.argument('output_json', type=str)
 @click.option('--sort_vector', nargs=1, type=str,
               help="Sort vector for correlative analysis")
-def cli(matrix_list_fn, window_start, bin_number,
+def cli(feature_bed, matrix_list_fn, annotation, window_start, bin_number,
         bin_size, output_json, sort_vector):
     """
     Considering matrix files specified by a list, performs cross-matrix
@@ -482,7 +643,8 @@ def cli(matrix_list_fn, window_start, bin_number,
         ]
 
     mm = MatrixByMatrix(
-        matrix_list, window_start, bin_number, bin_size, sort_vector
+        feature_bed, matrix_list, annotation, window_start, bin_number,
+        bin_size, sort_vector
     )
     mm.writeJson(output_json)
 
