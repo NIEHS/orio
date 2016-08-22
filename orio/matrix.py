@@ -95,6 +95,7 @@ class BedMatrix(object):
         except ValueError:
             return float(num)
 
+    @staticmethod
     def countValidBedLines(self, input_file):
         # Count valid feature lines in bed file
         line_count = 0
@@ -110,6 +111,7 @@ class BedMatrix(object):
                     line_count += 1
         return line_count
 
+    @staticmethod
     def generateFeatureName(self, feature_header, feature_count, num_lines):
         # Generate row/feature names for bed entries
         feature_name = feature_header + "_"
@@ -118,6 +120,7 @@ class BedMatrix(object):
         feature_name = feature_name + str(feature_count)
         return feature_name
 
+    @staticmethod
     def checkHeader(self, line):
         # Check to see if line is header
         if line == "\n":
@@ -129,6 +132,7 @@ class BedMatrix(object):
         else:
             return False
 
+    @staticmethod
     def readTabName(self, tab_name):
         # Read feature name from tab-identifier
         feature_name = tab_name.split("_")
@@ -136,6 +140,7 @@ class BedMatrix(object):
         feature_name = "_".join(feature_name)
         return feature_name
 
+    @staticmethod
     def readFeatureIndex(self, tab_name):
         return int(tab_name.split('_')[-1])
 
