@@ -1,7 +1,6 @@
 import os
-import subprocess
 
-from .base import Validator, get_validateFiles_path
+from .base import Validator
 
 
 class FeatureListValidator(Validator):
@@ -30,34 +29,26 @@ class FeatureListValidator(Validator):
         else:
             return False
 
+    @staticmethod
+    def readChromSizes(sizes_file):
+        sizes = dict()
+        with open(sizes_file) as f:
+            for line in f:
+                chrom, size = line.strip().split()
+                sizes[chrom] = int(size)
+        return sizes
+
     def set_number_columns(self):
         # Find number of columns in bed
+        self.number_columns = None
         with open(self.feature_list) as f:
             for line in f:
                 if not (self.checkHeader(line)):
-                    self.number_columns = len(line.split())
-                    break
-
-    def run_validate_file(self):
-        executable = get_validateFiles_path()
-        proc = subprocess.Popen([
-            executable,
-            "-chromInfo=" + self.chrom_sizes_file,
-            "-type=bed" + str(self.number_columns),
-            self.feature_list
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        output, errors = proc.communicate()
-        output = output.decode(encoding='UTF-8')
-        errors = errors.decode(encoding='UTF-8')
-
-        if output != 'Error count 0\n':
-            outputs = output.splitlines()
-            self.add_errors(outputs)
-
-        if errors:
-            errors = errors.splitlines()
-            self.add_errors(errors)
+                    if self.number_columns:
+                        if self.number_columns != len(line.split()):
+                            self.add_error('Inconsistent number of columns')
+                    else:
+                        self.number_columns = len(line.split())
 
     def check_unique_feature_names(self):
         # If BED file contains names (cols >= 4), make sure they are unique
@@ -66,18 +57,53 @@ class FeatureListValidator(Validator):
 
         feature_names = set()
         with open(self.feature_list) as f:
+            contains_names = False
+            contains_dummy = False
+
             for line in f:
                 if not (self.checkHeader(line)):
                     feature_name = line.strip().split()[3]
                     if feature_name in self.DUMMY_NAMES:
-                        return
-                    if feature_name in feature_names:
-                        self.add_error(
-                            'Duplicate feature name: {}'.format(feature_name))
+                        contains_dummy = True
                     else:
-                        feature_names.add(feature_name)
+                        contains_names = True
+                        if feature_name in feature_names:
+                            self.add_error(
+                                'Duplicate feature name: {}'
+                                .format(feature_name))
+                        else:
+                            feature_names.add(feature_name)
+
+            if contains_names and contains_dummy:
+                self.add_error('Features inconsistently have names')
+
+    def check_bed_entries(self):
+        sizes = self.readChromSizes(self.chrom_sizes_file)
+        with open(self.feature_list) as f:
+            for line in f:
+                if not self.checkHeader(line):
+                    # Check for three columns
+                    try:
+                        chrom, start, end = line.strip().split()[0:3]
+                    except(ValueError):
+                        self.add_error(
+                            'Too few columns: {}'.format(line.strip()))
+                    else:
+                        # Check if chrom in sizes file
+                        if chrom not in sizes:
+                            self.add_error(
+                                'Chromosome "{}" not in chromosome list'
+                                .format(chrom))
+                        # Check if entry is contained within chromosome
+                        elif int(start) > sizes[chrom] or \
+                                int(end) > sizes[chrom] or \
+                                int(start) < 0 or \
+                                int(end) < 1:
+                            self.add_error(
+                                'Entry not within chromosome: {}'
+                                .format(line.strip()))
 
     def validate(self):
         self.set_number_columns()
-        self.run_validate_file()
+        self.check_bed_entries()
         self.check_unique_feature_names()
