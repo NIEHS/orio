@@ -102,7 +102,7 @@ class BedMatrix(object):
             return float(num)
 
     @staticmethod
-    def countValidBedLines(self, input_file):
+    def countValidBedLines(input_file):
         # Count valid feature lines in bed file
         line_count = 0
         with open(input_file) as f:
@@ -118,7 +118,7 @@ class BedMatrix(object):
         return line_count
 
     @staticmethod
-    def generateFeatureName(self, feature_header, feature_count, num_lines):
+    def generateFeatureName(feature_header, feature_count, num_lines):
         # Generate row/feature names for bed entries
         feature_name = feature_header + "_"
         for i in range(len(str(feature_count)), len(str(num_lines))):
@@ -127,7 +127,7 @@ class BedMatrix(object):
         return feature_name
 
     @staticmethod
-    def checkHeader(self, line):
+    def checkHeader(line):
         # Check to see if line is header
         if line == "\n":
             return True
@@ -139,7 +139,7 @@ class BedMatrix(object):
             return False
 
     @staticmethod
-    def readTabName(self, tab_name):
+    def readTabName(tab_name):
         # Read feature name from tab-identifier
         feature_name = tab_name.split("_")
         del feature_name[-1]
@@ -147,7 +147,7 @@ class BedMatrix(object):
         return feature_name
 
     @staticmethod
-    def readFeatureIndex(self, tab_name):
+    def readFeatureIndex(tab_name):
         return int(tab_name.split('_')[-1])
 
     def readChromSizes(self, in_file):
@@ -194,6 +194,7 @@ class BedMatrix(object):
                     if name is None or name in self.DUMMY_VALUES:
                         name = self.generateFeatureName(
                             "feature", count, total_valid_lines)
+                    count += 1
 
                     if self.stranded_bed:
                         if bed_fields >= 6:  # Contains strand information?
