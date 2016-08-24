@@ -1,6 +1,7 @@
 import os
 
 from .base import Validator
+from .feature_list import FeatureListValidator
 
 
 class SortVectorValidator(Validator):
@@ -41,8 +42,12 @@ class SortVectorValidator(Validator):
     def check_ids(self):
         with open(self.sort_vector_fn, 'r') as f:
             svs = f.read().splitlines()
+
+        fbs = []
         with open(self.feature_bed_fn, 'r') as f:
-            fbs = f.read().splitlines()
+            for line in f:
+                if not FeatureListValidator.checkHeader(line):
+                    fbs.append(line)
 
         if len(fbs) != len(svs):
             self.add_error(

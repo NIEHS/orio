@@ -18,7 +18,8 @@ class FeatureListValidator(Validator):
         self.feature_list = feature_list
         self.chrom_sizes_file = chrom_sizes_file
 
-    def checkHeader(self, line):
+    @staticmethod
+    def checkHeader(line):
         # Check to see if line is header
         if line == "\n":
             return True
