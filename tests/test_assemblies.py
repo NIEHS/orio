@@ -27,3 +27,8 @@ def test_get_assemblies():
 def test_download_chromosome_sizes():
     path = utils.get_data_path()
     assemblies.download_chromosome_sizes(path)
+
+
+@pytest.mark.skip(reason="slow")
+def test_download_annotations():
+    assemblies.download_annotations()
