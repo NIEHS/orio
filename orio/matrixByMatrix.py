@@ -497,14 +497,20 @@ class MatrixByMatrix():
 
             for i, vector in enumerate(vector_matrix):
                 for j, val in enumerate(vector):
-                    norm_matrix[i][j] = \
-                        val / vnorm[j]
+                    if vnorm[j] == 0:
+                        norm_matrix[i][j] = 0
+                    else:
+                        norm_matrix[i][j] = \
+                            val / vnorm[j]
 
             for k in kmeans_results:
                 for i, centroid in enumerate(kmeans_results[k]['centroids']):
                     for j, val in enumerate(centroid):
-                        norm_kmeans[k]['centroids'][i][j] = \
-                            val / vnorm[j]
+                        if vnorm[j] == 0:
+                            norm_kmeans[k]['centroids'][i][j] = 0
+                        else:
+                            norm_kmeans[k]['centroids'][i][j] = \
+                                val / vnorm[j]
 
             return norm_matrix, norm_kmeans
 
