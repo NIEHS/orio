@@ -11,6 +11,9 @@ class AnalysisValidator(Validator):
     MIN_BIN_SIZE = 1
     MAX_WINDOW_SIZE = 100000
 
+    # Possible 'empty' names used in a BED file
+    DUMMY_NAMES = ['.']
+
     def __init__(self, bin_anchor, bin_start,
                  bin_number, bin_size, feature_bed,
                  chrom_sizes, stranded_bed):
@@ -82,8 +85,12 @@ class AnalysisValidator(Validator):
             return False
 
     def checkIfOutside(self):
+        outside_message = 'Feature window extends off chromosome. BED entry ' \
+            'will be removed from analysis.'
+
         window_size = self.bin_size * self.bin_number
         chrom_sizes = self.readChrom(self.chrom_sizes_fn)
+        entry_num = 0
         with open(self.feature_bed_fn) as f:
             for line in f:
                 if not self.checkHeader(line):
@@ -92,9 +99,18 @@ class AnalysisValidator(Validator):
                     start = int(start) + 1  # Convert from 0-based to 1-based
                     end = int(end)
                     center = int((start + end) / 2)
+
+                    entry_name = None
+                    if bed_fields >= 3:
+                        name = line.strip().split()[3]
+                        if name not in self.DUMMY_NAMES:
+                            entry_name = name
+
                     if self.stranded_bed:
                         if bed_fields >= 6:  # Contains strand information?
                             strand = line.strip().split()[5]
+                            if not (strand == '+' or strand == '-'):
+                                self.add_error('Strand column is not valid.')
                         else:
                             self.add_error('BED file lacks strand column')
                     else:
@@ -129,12 +145,19 @@ class AnalysisValidator(Validator):
                     elif strand == '+' or strand == 'AMBIG':
                         if window_start < 1 or \
                                 window_end > chrome_size:
-                            self.add_error(
-                                'Feature window extends outside chromosome {}'
-                                .format(chromosome))
+                            if entry_name:
+                                self.add_warning('{}: {}'.format(
+                                    entry_name, outside_message))
+                            else:
+                                self.add_warning('Entry number {}: {}'.format(
+                                    str(entry_num), outside_message))
                     elif strand == '-':
                         if window_end < 1 or \
                                 window_start > chrome_size:
-                            self.add_error(
-                                'Feature window extends outside chromosome {}'
-                                .format(chromosome))
+                            if entry_name:
+                                self.add_warning('{}: {}'.format(
+                                    entry_name, outside_message))
+                            else:
+                                self.add_warning('Entry number {}: {}'.format(
+                                    str(entry_num), outside_message))
+                    entry_num += 1

@@ -5,6 +5,7 @@ import os
 import tempfile
 from subprocess import call
 from six import string_types
+import warnings
 
 from . import utils
 
@@ -14,10 +15,11 @@ class BedMatrix(object):
     ANCHOR_OPTIONS = ('start', 'end', 'center')
     bigWigAverageOverBed_path = os.path.join(
         utils.get_bin_path(), "bigWigAverageOverBed")
+    DUMMY_VALUES = ['.']
 
     def __init__(self, bigwigs, feature_bed, output_matrix, anchor, bin_start,
                  bin_number, bin_size, opposite_strand_fn, stranded_bigwigs,
-                 stranded_bed):
+                 stranded_bed, chrom_sizes):
 
         # Set instance variables
         self.feature_bed = feature_bed
@@ -38,6 +40,7 @@ class BedMatrix(object):
                 raise ValueError("One unstranded bigwig file is expected!!")
             self.unstranded_bigwig = bigwigs[0]
         self.stranded_bed = stranded_bed
+        self.chrom_sizes = chrom_sizes
 
         # Type checks
         assert anchor in self.ANCHOR_OPTIONS
@@ -49,12 +52,15 @@ class BedMatrix(object):
             if os.path.dirname(self.output_matrix) != "":
                 assert os.path.exists(os.path.dirname(self.opposite_strand_fn))
             if not self.stranded_bed:
-                raise ValueError("Cannot report opposite strand coverage without stranded_bed flag!!")
+                raise ValueError("Cannot report opposite strand coverage \
+                                 without stranded_bed flag!!")
         if self.stranded_bigwigs:
             assert os.path.exists(self.plus_bigwig)
             assert os.path.exists(self.minus_bigwig)
         else:
             assert os.path.exists(self.unstranded_bigwig)
+        if self.chrom_sizes:
+            assert os.path.exists(self.chrom_sizes)
         assert os.path.exists(self.feature_bed)
         if os.path.dirname(self.output_matrix) != "":
             assert os.path.exists(os.path.dirname(self.output_matrix))
@@ -95,7 +101,8 @@ class BedMatrix(object):
         except ValueError:
             return float(num)
 
-    def countValidBedLines(self, input_file):
+    @staticmethod
+    def countValidBedLines(input_file):
         # Count valid feature lines in bed file
         line_count = 0
         with open(input_file) as f:
@@ -110,7 +117,8 @@ class BedMatrix(object):
                     line_count += 1
         return line_count
 
-    def generateFeatureName(self, feature_header, feature_count, num_lines):
+    @staticmethod
+    def generateFeatureName(feature_header, feature_count, num_lines):
         # Generate row/feature names for bed entries
         feature_name = feature_header + "_"
         for i in range(len(str(feature_count)), len(str(num_lines))):
@@ -118,7 +126,8 @@ class BedMatrix(object):
         feature_name = feature_name + str(feature_count)
         return feature_name
 
-    def checkHeader(self, line):
+    @staticmethod
+    def checkHeader(line):
         # Check to see if line is header
         if line == "\n":
             return True
@@ -129,15 +138,27 @@ class BedMatrix(object):
         else:
             return False
 
-    def readTabName(self, tab_name):
+    @staticmethod
+    def readTabName(tab_name):
         # Read feature name from tab-identifier
         feature_name = tab_name.split("_")
         del feature_name[-1]
         feature_name = "_".join(feature_name)
         return feature_name
 
-    def readFeatureIndex(self, tab_name):
+    @staticmethod
+    def readFeatureIndex(tab_name):
         return int(tab_name.split('_')[-1])
+
+    def readChromSizes(self, in_file):
+        sizes = dict()
+
+        with open(in_file) as f:
+            for line in f:
+                chrom, size = line.strip().split()
+                sizes[chrom] = int(size)
+
+        return sizes
 
     def make_bed(self):
         """
@@ -145,6 +166,10 @@ class BedMatrix(object):
         Create a dictionary with feature information.
         Create list with order of features in bed file.
         """
+        sizes = None
+        if self.chrom_sizes:
+            sizes = self.readChromSizes(self.chrom_sizes)
+
         input_file = self.feature_bed
         feature_dict = {}
         feature_list = []
@@ -154,33 +179,33 @@ class BedMatrix(object):
             count = 0
             for line in f:
                 if not self.checkHeader(line):
+                    skip = False
 
                     # Read fields from bed
                     bed_fields = len(line.strip().split())
                     chromosome, start, end = line.strip().split()[0:3]
-                    start = int(start) + 1  # Convert from 0-based to 1-based
+                    start = int(start) + 1  # 0-based to 1-based
                     end = int(end)
                     center = int((start + end) / 2)
+
+                    name = None
                     if bed_fields >= 4:  # Contains name information?
                         name = line.strip().split()[3]
-                    else:
-                        name = self.generateFeatureName("feature", count, total_valid_lines)
-                    feature_list.append(name)
+                    if name is None or name in self.DUMMY_VALUES:
+                        name = self.generateFeatureName(
+                            "feature", count, total_valid_lines)
+                    count += 1
+
                     if self.stranded_bed:
                         if bed_fields >= 6:  # Contains strand information?
                             strand = line.strip().split()[5]
+                            if strand in self.DUMMY_VALUES:
+                                raise ValueError('Strand column is not \
+                                    informative!!')
                         else:
                             raise ValueError("BED file lacks strand column!!")
                     else:
                         strand = "AMBIG"
-
-                    # Update feature dict
-                    feature_dict[name] = {
-                        "chromosome": chromosome,
-                        "start": start,
-                        "end": end,
-                        "strand": strand
-                    }
 
                     # Define anchor point for window
                     if self.anchor == "center":
@@ -193,30 +218,75 @@ class BedMatrix(object):
                             start = end
 
                     # Create bed with bins for the given line
-                    if strand == "+" or strand == "AMBIG":
-                        start = start + self.bin_start
-                        for i in range(self.bin_number):
-                            str_ = '{}\t{}\t{}\t{}_{}\n'.format(
-                                chromosome,
-                                start - 1,
-                                start + self.bin_size - 1,
-                                name,
-                                i
-                            )
-                            OUTPUT.write(str_)
-                            start += self.bin_size
-                    elif strand == "-":
-                        start = start - self.bin_start
-                        for i in range(self.bin_number):
-                            str_ = '{}\t{}\t{}\t{}_{}\n'.format(
-                                chromosome,
-                                start - self.bin_size,
-                                start,
-                                name,
-                                i
-                            )
-                            OUTPUT.write(str_)
-                            start -= self.bin_size
+                    if sizes:
+                        if chromosome in sizes:
+                            if strand == "+" or strand == "AMBIG":
+                                s = start + self.bin_start
+                                e = start + self.bin_number * self.bin_size \
+                                    - 1
+
+                                if s < 1 or e > sizes[chromosome]:
+                                    skip = True
+
+                                    message = 'Window outside chromosome:\n' +\
+                                        line.strip()
+                                    warnings.warn(message)
+
+                            elif strand == "-":
+                                s = start - self.bin_start
+                                e = start - self.bin_number * self.bin_size \
+                                    + 1
+
+                                if e < 1 or s >= sizes[chromosome]:
+                                    skip = True
+
+                                    message = 'Window outside chromosome:\n' +\
+                                        line.strip()
+                                    warnings.warn(message)
+
+                        else:
+                            skip = True
+
+                            message = 'Chromosome not in sizes file:\n' + \
+                                line.strip()
+                            warnings.warn(message)
+
+                    if not skip:
+                        if strand == "+" or strand == "AMBIG":
+                            start = start + self.bin_start
+                            for i in range(self.bin_number):
+                                str_ = '{}\t{}\t{}\t{}_{}\n'.format(
+                                    chromosome,
+                                    start - 1,
+                                    start + self.bin_size - 1,
+                                    name,
+                                    i
+                                )
+                                OUTPUT.write(str_)
+                                start += self.bin_size
+
+                        elif strand == "-":
+                            start = start - self.bin_start
+                            for i in range(self.bin_number):
+                                str_ = '{}\t{}\t{}\t{}_{}\n'.format(
+                                    chromosome,
+                                    start - self.bin_size,
+                                    start,
+                                    name,
+                                    i
+                                )
+                                OUTPUT.write(str_)
+                                start -= self.bin_size
+
+                        feature_list.append(name)
+
+                        feature_dict[name] = {
+                            "chromosome": chromosome,
+                            "start": start,
+                            "end": end,
+                            "strand": strand
+                        }
+
         self.feature_order = feature_list
         self.feature_info = feature_dict
 
@@ -366,21 +436,32 @@ class BedMatrix(object):
 @click.argument('bigwigs', nargs=-1)
 @click.argument('feature_bed')
 @click.argument('output_matrix')
-@click.option('-a', '--anchor', default='center', help='Bin anchor', type=click.Choice(BedMatrix.ANCHOR_OPTIONS))
-@click.option('-b', '--bin_start', default=-2500, help='Relative bin start', type=int)
-@click.option('-n', '--bin_number', default=50, help='Number of bins', type=int)
-@click.option('-s', '--bin_size', default=100, help='Size of bins', type=int)
-@click.option('--opposite_strand_fn', type=str, help='Output filename for opposite strand coverage')
-@click.option('--stranded_bigwigs', is_flag=True, help='Expect stranded, paired bigwigs with plus/forward strand first')
+@click.option('-a', '--anchor', default='center', help='Bin anchor',
+              type=click.Choice(BedMatrix.ANCHOR_OPTIONS))
+@click.option('-b', '--bin_start', default=-2500, help='Relative bin start',
+              type=int)
+@click.option('-n', '--bin_number', default=50, help='Number of bins',
+              type=int)
+@click.option('-s', '--bin_size', default=100, help='Size of bins',
+              type=int)
+@click.option('--opposite_strand_fn', type=str,
+              help='Output filename for opposite strand coverage')
+@click.option('--stranded_bigwigs', is_flag=True,
+              help='Expect stranded, paired bigwigs with plus/forward '
+              'strand first')
 @click.option('--stranded_bed', is_flag=True, help='Expect stranded bed')
+@click.option('--chrom_sizes', type=str, help='If specified, considers a '
+              'chrom_sizes file when generating windows. If a window extends '
+              'off a chromosome, the feature entry is skipped.')
 def cli(bigwigs, feature_bed, output_matrix, anchor, bin_start, bin_number,
-        bin_size, opposite_strand_fn, stranded_bigwigs, stranded_bed):
+        bin_size, opposite_strand_fn, stranded_bigwigs, stranded_bed,
+        chrom_sizes):
     """
     Generate matrices for stranded or unstranded bigWig matrices
     """
     BedMatrix(bigwigs, feature_bed, output_matrix, anchor, bin_start,
               bin_number, bin_size, opposite_strand_fn, stranded_bigwigs,
-              stranded_bed)
+              stranded_bed, chrom_sizes)
 
 if __name__ == '__main__':
     cli()
