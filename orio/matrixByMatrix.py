@@ -108,39 +108,44 @@ def associateGenes(features, transcripts):
     for feature in features:
         chromosome = feature['chromosome']
 
-        left_bisect = bisect.bisect_left(
-            end_values[chromosome],
-            feature['start']
-        )
-        right_bisect = bisect.bisect_right(
-            start_values[chromosome],
-            feature['end']
-        )
-        left_index = max(left_bisect-1, 0)
-        right_index = min(right_bisect+1, len(start_values[chromosome]))
+        if chromosome in transcripts:
+            left_bisect = bisect.bisect_left(
+                end_values[chromosome],
+                feature['start']
+            )
+            right_bisect = bisect.bisect_right(
+                start_values[chromosome],
+                feature['end']
+            )
+            left_index = max(left_bisect-1, 0)
+            right_index = min(right_bisect+1, len(start_values[chromosome]))
 
-        shortest_dist = float('Inf')
-        closest_gene = set()
+            shortest_dist = float('Inf')
+            closest_gene = set()
 
-        for transcript in \
-                set(start_keys[chromosome][left_index:]) & \
-                set(end_keys[chromosome][0:right_index]):
+            for transcript in \
+                    set(start_keys[chromosome][left_index:]) & \
+                    set(end_keys[chromosome][0:right_index]):
 
-            dist = numpy.amax([
-                0,
-                feature['start'] - transcripts[chromosome][transcript]['end'],
-                transcripts[chromosome][transcript]['start'] - feature['end'],
-            ])
-            if dist < shortest_dist:
-                shortest_dist = dist
-                closest_gene = \
-                    {transcripts[chromosome][transcript]['gene_id']}
-            elif dist == shortest_dist:
-                closest_gene.add(
-                    transcripts[chromosome][transcript]['gene_id']
-                )
+                dist = numpy.amax([
+                    0,
+                    feature['start'] -
+                    transcripts[chromosome][transcript]['end'],
+                    transcripts[chromosome][transcript]['start'] -
+                    feature['end'],
+                ])
+                if dist < shortest_dist:
+                    shortest_dist = dist
+                    closest_gene = \
+                        {transcripts[chromosome][transcript]['gene_id']}
+                elif dist == shortest_dist:
+                    closest_gene.add(
+                        transcripts[chromosome][transcript]['gene_id']
+                    )
 
-        gene_list.append(','.join(list(closest_gene)))
+            gene_list.append(','.join(list(closest_gene)))
+        else:
+            gene_list.append(None)
 
     return gene_list
 
@@ -606,7 +611,7 @@ class MatrixByMatrix():
             'feature_to_gene': self.feature_to_gene,
         }
         with open(fn, 'w') as f:
-            json.dump(output_dict, f, separators=(",", ": "))
+            json.dump(output_dict, f, separators=(",", ": "), indent=4)
 
 
 @click.command()
