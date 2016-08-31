@@ -11,6 +11,7 @@ import os
 import json
 import bisect
 from collections import defaultdict
+import warnings
 
 
 def readGTF(annotation_file):
@@ -232,7 +233,13 @@ class MatrixByMatrix():
                             try:
                                 corr = corr_matrix[j][i]
                             except IndexError:
-                                corr = stats.spearmanr(vl1, vl2)[0]
+                                with warnings.catch_warnings():
+                                    warnings.simplefilter(
+                                        'error', RuntimeWarning)
+                                    try:
+                                        corr = stats.spearmanr(vl1, vl2)[0]
+                                    except Warning:
+                                        corr = 0
                         corrs.append(corr)
                     corr_matrix.append(corrs)
             return corr_matrix
@@ -611,7 +618,7 @@ class MatrixByMatrix():
             'feature_to_gene': self.feature_to_gene,
         }
         with open(fn, 'w') as f:
-            json.dump(output_dict, f, separators=(",", ": "), indent=4)
+            json.dump(output_dict, f, separators=(",", ": "))
 
 
 @click.command()
