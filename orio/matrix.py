@@ -19,7 +19,7 @@ class BedMatrix(object):
 
     def __init__(self, bigwigs, feature_bed, output_matrix, anchor, bin_start,
                  bin_number, bin_size, opposite_strand_fn, stranded_bigwigs,
-                 stranded_bed, chrom_sizes):
+                 stranded_bed, chrom_sizes, temp_dir):
 
         # Set instance variables
         self.feature_bed = feature_bed
@@ -41,6 +41,7 @@ class BedMatrix(object):
             self.unstranded_bigwig = bigwigs[0]
         self.stranded_bed = stranded_bed
         self.chrom_sizes = chrom_sizes
+        self.temp_dir = temp_dir
 
         # Type checks
         assert anchor in self.ANCHOR_OPTIONS
@@ -65,6 +66,9 @@ class BedMatrix(object):
         if os.path.dirname(self.output_matrix) != "":
             assert os.path.exists(os.path.dirname(self.output_matrix))
 
+        if self.temp_dir:
+            os.makedirs(self.temp_dir, exist_ok=True)
+
         self.execute()
 
     def execute(self):
@@ -83,10 +87,17 @@ class BedMatrix(object):
             pass
 
     def create_temps(self):
-        self._plus_filename = tempfile.mkstemp()[1]
-        self._minus_filename = tempfile.mkstemp()[1]
-        self._unstranded_filename = tempfile.mkstemp()[1]
-        self._bedfile = tempfile.NamedTemporaryFile(mode='w')
+        if self.temp_dir:
+            self._plus_filename = tempfile.mkstemp(dir=self.temp_dir)[1]
+            self._minus_filename = tempfile.mkstemp(dir=self.temp_dir)[1]
+            self._unstranded_filename = tempfile.mkstemp(dir=self.temp_dir)[1]
+            self._bedfile = \
+                tempfile.NamedTemporaryFile(mode='w', dir=self.temp_dir)
+        else:
+            self._plus_filename = tempfile.mkstemp()[1]
+            self._minus_filename = tempfile.mkstemp()[1]
+            self._unstranded_filename = tempfile.mkstemp()[1]
+            self._bedfile = tempfile.NamedTemporaryFile(mode='w')
 
     def cleanup(self):
         self.tryDelete(self._plus_filename)
@@ -436,6 +447,8 @@ class BedMatrix(object):
 @click.argument('bigwigs', nargs=-1)
 @click.argument('feature_bed')
 @click.argument('output_matrix')
+@click.option('--temp_dir', default=None, help='Directory for temporary files',
+              type=str)
 @click.option('-a', '--anchor', default='center', help='Bin anchor',
               type=click.Choice(BedMatrix.ANCHOR_OPTIONS))
 @click.option('-b', '--bin_start', default=-2500, help='Relative bin start',
@@ -455,13 +468,13 @@ class BedMatrix(object):
               'off a chromosome, the feature entry is skipped.')
 def cli(bigwigs, feature_bed, output_matrix, anchor, bin_start, bin_number,
         bin_size, opposite_strand_fn, stranded_bigwigs, stranded_bed,
-        chrom_sizes):
+        chrom_sizes, temp_dir):
     """
     Generate matrices for stranded or unstranded bigWig matrices
     """
     BedMatrix(bigwigs, feature_bed, output_matrix, anchor, bin_start,
               bin_number, bin_size, opposite_strand_fn, stranded_bigwigs,
-              stranded_bed, chrom_sizes)
+              stranded_bed, chrom_sizes, temp_dir)
 
 if __name__ == '__main__':
     cli()
