@@ -526,11 +526,33 @@ class MatrixByMatrix():
 
             return norm_matrix, norm_kmeans
 
-        def getFCVectorData(vector_matrix, row_names, col_names, matrix_order):
-            fc_vectors = dict({'vectors': {}})
+        def getQuartiles(vector_matrix):
+            quartile_values = dict()
+
+            labels = ['min', 'max', 'q1', 'q2', 'q3']
+            values = [0, 100, 25, 50, 75]
+
+            for label, value in zip(labels, values):
+                quartile_values[label] = numpy.percentile(
+                    vector_matrix, value, axis=0)
+
+            return quartile_values
+
+        def getFCVectorData(vector_matrix, row_names, col_names, matrix_order,
+                            quartile_values):
+            fc_vectors = dict({
+                'vectors': {},
+            })
 
             # if dsc_rep_data and not sort_vector:
             fc_vectors['col_names'] = matrix_order
+
+            # Reorder quartile values and vector by dendrogram matrix order
+            for label in quartile_values:
+                fc_vectors.update({label: []})
+                for i, matrix in enumerate(matrix_order):
+                    fc_vectors[label].append(
+                        quartile_values[label][col_names.index(matrix)])
 
             for i, vector in enumerate(vector_matrix):
                 reorder_vector = []
@@ -573,11 +595,12 @@ class MatrixByMatrix():
         vector_matrix, row_names, col_names = \
             createVectorMatrix(self.matrix_files, self.matrix_names)
         kmeans_results = performKMeansClustering(vector_matrix)
-        vector_matrix, kmeans_results = normalizeKMeans(
-            vector_matrix, kmeans_results)
+        # vector_matrix, kmeans_results = normalizeKMeans(
+        #     vector_matrix, kmeans_results)
+        quartile_values = getQuartiles(vector_matrix)
 
         self.fc_vectors = getFCVectorData(
-            vector_matrix, row_names, col_names, matrix_order)
+            vector_matrix, row_names, col_names, matrix_order, quartile_values)
         self.fc_clusters = getFCClusterData(
             kmeans_results, row_names)
         self.fc_centroids = getFCCentroidData(
