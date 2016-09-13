@@ -101,7 +101,7 @@ class AnalysisValidator(Validator):
                     center = int((start + end) / 2)
 
                     entry_name = None
-                    if bed_fields >= 3:
+                    if bed_fields >= 4:
                         name = line.strip().split()[3]
                         if name not in self.DUMMY_NAMES:
                             entry_name = name
