@@ -19,7 +19,7 @@ class BedMatrix(object):
 
     def __init__(self, bigwigs, feature_bed, output_matrix, anchor, bin_start,
                  bin_number, bin_size, opposite_strand_fn, stranded_bigwigs,
-                 stranded_bed, chrom_sizes, temp_dir):
+                 stranded_bed, chrom_sizes, temp_dir=None):
 
         # Set instance variables
         self.feature_bed = feature_bed
@@ -66,8 +66,9 @@ class BedMatrix(object):
         if os.path.dirname(self.output_matrix) != "":
             assert os.path.exists(os.path.dirname(self.output_matrix))
 
-        if self.temp_dir:
-            os.makedirs(self.temp_dir, exist_ok=True)
+        if self.temp_dir is None:
+            self.temp_dir = tempfile.gettempdir()
+        os.makedirs(self.temp_dir, exist_ok=True)
 
         self.execute()
 
@@ -87,17 +88,11 @@ class BedMatrix(object):
             pass
 
     def create_temps(self):
-        if self.temp_dir:
-            self._plus_filename = tempfile.mkstemp(dir=self.temp_dir)[1]
-            self._minus_filename = tempfile.mkstemp(dir=self.temp_dir)[1]
-            self._unstranded_filename = tempfile.mkstemp(dir=self.temp_dir)[1]
-            self._bedfile = \
-                tempfile.NamedTemporaryFile(mode='w', dir=self.temp_dir)
-        else:
-            self._plus_filename = tempfile.mkstemp()[1]
-            self._minus_filename = tempfile.mkstemp()[1]
-            self._unstranded_filename = tempfile.mkstemp()[1]
-            self._bedfile = tempfile.NamedTemporaryFile(mode='w')
+        path = self.temp_dir
+        self._plus_filename = tempfile.mkstemp(dir=path)[1]
+        self._minus_filename = tempfile.mkstemp(dir=path)[1]
+        self._unstranded_filename = tempfile.mkstemp(dir=path)[1]
+        self._bedfile = tempfile.NamedTemporaryFile(mode='w', dir=path)
 
     def cleanup(self):
         self.tryDelete(self._plus_filename)
