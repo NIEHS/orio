@@ -53,8 +53,7 @@ class BedMatrix(object):
             if os.path.dirname(self.output_matrix) != "":
                 assert os.path.exists(os.path.dirname(self.opposite_strand_fn))
             if not self.stranded_bed:
-                raise ValueError("Cannot report opposite strand coverage \
-                                 without stranded_bed flag!!")
+                raise ValueError("Cannot report opposite strand coverage without stranded_bed flag!!")  # noqa
         if self.stranded_bigwigs:
             assert os.path.exists(self.plus_bigwig)
             assert os.path.exists(self.minus_bigwig)
@@ -206,8 +205,7 @@ class BedMatrix(object):
                         if bed_fields >= 6:  # Contains strand information?
                             strand = line.strip().split()[5]
                             if strand in self.DUMMY_VALUES:
-                                raise ValueError('Strand column is not \
-                                    informative!!')
+                                raise ValueError('Strand column is not informative!!')  # noqa
                         else:
                             raise ValueError("BED file lacks strand column!!")
                     else:
