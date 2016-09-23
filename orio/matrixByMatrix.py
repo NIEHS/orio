@@ -14,7 +14,7 @@ from collections import defaultdict
 import warnings
 
 
-def readGTF(annotation_file):
+def read_gtf(annotation_file):
     transcripts = defaultdict(dict)
 
     with open(annotation_file) as f:
@@ -36,14 +36,14 @@ def readGTF(annotation_file):
 
             if feature == 'exon':
                 if tr_id not in transcripts[chromosome]:
-                    transcripts[chromosome][tr_id] = {
-                        'strand': strand,
-                        'exons': [],
-                        'gene_id': gene_id,
-                        }
+                    transcripts[chromosome][tr_id] = dict(
+                        strand=strand,
+                        exons=[],
+                        gene_id=gene_id,
+                    )
                 transcripts[chromosome][tr_id]['exons'].append(
                     [int(start), int(end)]
-                    )
+                )
 
     for chromosome in transcripts:
         for transcript in transcripts[chromosome].values():
@@ -66,21 +66,21 @@ def checkHeader(line):
         return False
 
 
-def readBED(bed_fn):
+def read_bed(bed_fn):
     bed_list = []
     with open(bed_fn) as bed:
         for line in bed:
             if not checkHeader(line):
                 chromosome, start, end = line.strip().split()[0:3]
-                bed_list.append({
-                    'chromosome': chromosome,
-                    'start': int(start) + 1,
-                    'end': int(end),
-                })
+                bed_list.append(dict(
+                    chromosome=chromosome,
+                    start=int(start) + 1,
+                    end=int(end),
+                ))
     return bed_list
 
 
-def associateGenes(features, transcripts):
+def associate_genes(features, transcripts):
     gene_list = []
 
     start_values = dict()
@@ -118,8 +118,8 @@ def associateGenes(features, transcripts):
                 start_values[chromosome],
                 feature['end']
             )
-            left_index = max(left_bisect-1, 0)
-            right_index = min(right_bisect+1, len(start_values[chromosome]))
+            left_index = max(left_bisect - 1, 0)
+            right_index = min(right_bisect + 1, len(start_values[chromosome]))
 
             shortest_dist = float('Inf')
             closest_gene = set()
@@ -137,8 +137,7 @@ def associateGenes(features, transcripts):
                 ])
                 if dist < shortest_dist:
                     shortest_dist = dist
-                    closest_gene = \
-                        {transcripts[chromosome][transcript]['gene_id']}
+                    closest_gene = {transcripts[chromosome][transcript]['gene_id']}
                 elif dist == shortest_dist:
                     closest_gene.add(
                         transcripts[chromosome][transcript]['gene_id']
@@ -495,7 +494,7 @@ class MatrixByMatrix():
                 kmeans_results[k] = {
                     'centroids': centroids.tolist(),
                     'labels': labels.tolist()
-                    }
+                }
                 for i, centroid in enumerate(kmeans_results[k]['centroids']):
                     for j, val in enumerate(centroid):
                         kmeans_results[k]['centroids'][i][j] = \
@@ -533,8 +532,7 @@ class MatrixByMatrix():
             values = [0, 100, 25, 50, 75]
 
             for label, value in zip(labels, values):
-                quartile_values[label] = numpy.percentile(
-                    vector_matrix, value, axis=0)
+                quartile_values[label] = numpy.percentile(vector_matrix, value, axis=0)
 
             return quartile_values
 
@@ -557,8 +555,7 @@ class MatrixByMatrix():
             for i, vector in enumerate(vector_matrix):
                 reorder_vector = []
                 for matrix in matrix_order:
-                    reorder_vector.append(
-                        vector_matrix[i][col_names.index(matrix)])
+                    reorder_vector.append(vector_matrix[i][col_names.index(matrix)])
                 fc_vectors['vectors'][row_names[i]] = reorder_vector
 
             return fc_vectors
@@ -595,8 +592,6 @@ class MatrixByMatrix():
         vector_matrix, row_names, col_names = \
             createVectorMatrix(self.matrix_files, self.matrix_names)
         kmeans_results = performKMeansClustering(vector_matrix)
-        # vector_matrix, kmeans_results = normalizeKMeans(
-        #     vector_matrix, kmeans_results)
         quartile_values = getQuartiles(vector_matrix)
 
         self.fc_vectors = getFCVectorData(
@@ -616,11 +611,11 @@ class MatrixByMatrix():
         return row_names
 
     def findClosestGene(self):
-        features = readBED(self.feature_bed)
-        genes = readGTF(self.annotation)
+        features = read_bed(self.feature_bed)
+        genes = read_gtf(self.annotation)
 
         feature_list = self.readRowNames(self.matrix_list[0][2])
-        gene_list = associateGenes(features, genes)
+        gene_list = associate_genes(features, genes)
 
         self.feature_to_gene = {k: v for k, v in zip(feature_list, gene_list)}
 
@@ -631,15 +626,15 @@ class MatrixByMatrix():
         self.findClosestGene()
 
     def writeJson(self, fn):
-        output_dict = {
-            'dsc_full_data': self.dsc_full_data,
-            'dsc_rep_data': self.dsc_rep_data,
-            'dsc_dendrogram': self.dsc_dendrogram,
-            'fc_vectors': self.fc_vectors,
-            'fc_clusters': self.fc_clusters,
-            'fc_centroids': self.fc_centroids,
-            'feature_to_gene': self.feature_to_gene,
-        }
+        output_dict = dict(
+            dsc_full_data=self.dsc_full_data,
+            dsc_rep_data=self.dsc_rep_data,
+            dsc_dendrogram=self.dsc_dendrogram,
+            fc_vectors=self.fc_vectors,
+            fc_clusters=self.fc_clusters,
+            fc_centroids=self.fc_centroids,
+            feature_to_gene=self.feature_to_gene,
+        )
         with open(fn, 'w') as f:
             json.dump(output_dict, f, separators=(",", ": "))
 

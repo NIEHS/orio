@@ -30,7 +30,7 @@ import click
 import validators
 
 
-def write_errs(errs):
+def write_errors(errs):
     if errs:
         click.echo(click.style(errs, bg='red', fg='white'), err=True)
 
@@ -46,7 +46,7 @@ def validate():
 def feature_list(feature_list, chrom_sizes_file):
     validator = validators.FeatureListValidator(feature_list, chrom_sizes_file)
     validator.validate()
-    write_errs(validator.display_errors())
+    write_errors(validator.display_errors())
 
 
 @validate.command()
@@ -55,7 +55,7 @@ def feature_list(feature_list, chrom_sizes_file):
 def sort_vector(feature_bed, sort_vector):
     validator = validators.SortVectorValidator(feature_bed, sort_vector)
     validator.validate()
-    write_errs(validator.display_errors())
+    write_errors(validator.display_errors())
 
 
 @validate.command()
@@ -64,7 +64,7 @@ def sort_vector(feature_bed, sort_vector):
 def bigwig(bigwig, chrom_sizes_file):
     validator = validators.BigWigValidator(bigwig, chrom_sizes_file)
     validator.validate()
-    write_errs(validator.display_errors())
+    write_errors(validator.display_errors())
 
 
 @validate.command()
@@ -84,7 +84,7 @@ def analysis(bin_anchor, bin_start, bin_number,
         bin_size, feature_bed, chrom_sizes,
         stranded_bed)
     validator.validate()
-    write_errs(validator.display_errors())
+    write_errors(validator.display_errors())
 
 
 if __name__ == '__main__':

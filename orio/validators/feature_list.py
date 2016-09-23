@@ -69,9 +69,7 @@ class FeatureListValidator(Validator):
                     else:
                         contains_names = True
                         if feature_name in feature_names:
-                            self.add_error(
-                                'Duplicate feature name: {}'
-                                .format(feature_name))
+                            self.add_error('Duplicate feature name: {}'.format(feature_name))
                         else:
                             feature_names.add(feature_name)
 
@@ -87,22 +85,17 @@ class FeatureListValidator(Validator):
                     try:
                         chrom, start, end = line.strip().split()[0:3]
                     except(ValueError):
-                        self.add_error(
-                            'Too few columns: {}'.format(line.strip()))
+                        self.add_error('Too few columns: {}'.format(line.strip()))
                     else:
                         # Check if chrom in sizes file
                         if chrom not in sizes:
-                            self.add_error(
-                                'Chromosome "{}" not in chromosome list'
-                                .format(chrom))
+                            self.add_error('Chromosome "{}" not in chromosome list'.format(chrom))
                         # Check if entry is contained within chromosome
                         elif int(start) > sizes[chrom] or \
                                 int(end) > sizes[chrom] or \
                                 int(start) < 0 or \
                                 int(end) < 1:
-                            self.add_error(
-                                'Entry not within chromosome: {}'
-                                .format(line.strip()))
+                            self.add_error('Entry not within chromosome: {}'.format(line.strip()))
 
     def validate(self):
         self.set_number_columns()

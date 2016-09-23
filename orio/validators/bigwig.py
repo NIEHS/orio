@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from .base import Validator, get_validateFiles_path
+from .base import Validator, get_validate_files_path
 
 
 class BigWigValidator(Validator):
@@ -17,7 +17,7 @@ class BigWigValidator(Validator):
         self.chrom_sizes_file = chrom_sizes_file
 
     def validate(self):
-        executable = get_validateFiles_path()
+        executable = get_validate_files_path()
         proc = subprocess.Popen([
             executable,
             "-chromInfo=" + self.chrom_sizes_file,

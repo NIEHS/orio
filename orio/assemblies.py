@@ -5,7 +5,7 @@ import os
 from . import utils
 
 
-def get_UCSC_cursor(cursorclass=pymysql.cursors.Cursor):
+def get_ucsc_cursor(cursorclass=pymysql.cursors.Cursor):
     cnx = pymysql.connect(
         user='genome',
         host='genome-mysql.cse.ucsc.edu',
@@ -16,14 +16,14 @@ def get_UCSC_cursor(cursorclass=pymysql.cursors.Cursor):
 
 
 def get_databases():
-    cursor = get_UCSC_cursor()
+    cursor = get_ucsc_cursor()
     cursor.execute('SHOW DATABASES')
     return [entry[0] for entry in cursor]
 
 
 def get_assemblies():
-    cursor = get_UCSC_cursor()
-    cursor.execute('SELECT table_schema from INFORMATION_SCHEMA.TABLES where table_name="chromInfo";')
+    cursor = get_ucsc_cursor()
+    cursor.execute('SELECT table_schema from INFORMATION_SCHEMA.TABLES where table_name="chromInfo";')  # noqa
     return [d[0] for d in cursor.fetchall()]
 
 
@@ -35,7 +35,7 @@ def download_annotations():
         'mm10',
         'dm6',
     ]
-    cursor = get_UCSC_cursor(cursorclass=pymysql.cursors.DictCursor)
+    cursor = get_ucsc_cursor(cursorclass=pymysql.cursors.DictCursor)
     for assembly in assemblies:
         query = """
         SELECT {0}.refGene.name, {0}.refGene.chrom, {0}.refGene.exonStarts,
@@ -70,8 +70,7 @@ def download_annotations():
                         '.',
                         entry['strand'],
                         '.',
-                        'gene_id "{}"; transcript_id "{}";'.format(
-                           entry['name2'], entry['name'],),
+                        'gene_id "{}"; transcript_id "{}";'.format(entry['name2'], entry['name'],),
                     ]) + '\n')
 
     cursor.close()
@@ -80,7 +79,7 @@ def download_annotations():
 def download_chromosome_sizes(path):
     dbs = get_assemblies()
     for db in dbs:
-        cursor = get_UCSC_cursor()
+        cursor = get_ucsc_cursor()
         try:
             cursor.execute('SELECT chrom, size FROM {}.chromInfo'.format(db))
         except (pymysql.InternalError, pymysql.ProgrammingError) as err:

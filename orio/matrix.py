@@ -21,7 +21,6 @@ class BedMatrix(object):
                  bin_number, bin_size, opposite_strand_fn, stranded_bigwigs,
                  stranded_bed, chrom_sizes, temp_dir=None):
 
-        # Set instance variables
         self.feature_bed = feature_bed
         self.output_matrix = output_matrix
         self.anchor = anchor
@@ -41,10 +40,18 @@ class BedMatrix(object):
             self.unstranded_bigwig = bigwigs[0]
         self.stranded_bed = stranded_bed
         self.chrom_sizes = chrom_sizes
-        self.temp_dir = temp_dir
 
+        self.temp_dir = temp_dir
+        if self.temp_dir is None:
+            self.temp_dir = tempfile.gettempdir()
+        os.makedirs(self.temp_dir, exist_ok=True)
+
+        self.check_types()
+        self.execute()
+
+    def check_types(self):
         # Type checks
-        assert anchor in self.ANCHOR_OPTIONS
+        assert self.anchor in self.ANCHOR_OPTIONS
         assert isinstance(self.bin_start, int)
         assert isinstance(self.bin_number, int)
         assert isinstance(self.bin_size, int)
@@ -65,12 +72,6 @@ class BedMatrix(object):
         if os.path.dirname(self.output_matrix) != "":
             assert os.path.exists(os.path.dirname(self.output_matrix))
 
-        if self.temp_dir is None:
-            self.temp_dir = tempfile.gettempdir()
-        os.makedirs(self.temp_dir, exist_ok=True)
-
-        self.execute()
-
     def execute(self):
         try:
             self.create_temps()
@@ -80,7 +81,7 @@ class BedMatrix(object):
         finally:
             self.cleanup()
 
-    def tryDelete(self, fn):
+    def try_delete(self, fn):
         try:
             os.remove(fn)
         except FileNotFoundError:
@@ -94,9 +95,9 @@ class BedMatrix(object):
         self._bedfile = tempfile.NamedTemporaryFile(mode='w', dir=path)
 
     def cleanup(self):
-        self.tryDelete(self._plus_filename)
-        self.tryDelete(self._minus_filename)
-        self.tryDelete(self._unstranded_filename)
+        self.try_delete(self._plus_filename)
+        self.try_delete(self._minus_filename)
+        self.try_delete(self._unstranded_filename)
         self._bedfile.close()
 
     def checkInt(self, num):
@@ -157,17 +158,16 @@ class BedMatrix(object):
 
     def readChromSizes(self, in_file):
         sizes = dict()
-
         with open(in_file) as f:
             for line in f:
                 chrom, size = line.strip().split()
                 sizes[chrom] = int(size)
-
         return sizes
 
     def make_bed(self):
         """
         Open bed file, create a bed of bins.
+
         Create a dictionary with feature information.
         Create list with order of features in bed file.
         """
@@ -358,8 +358,8 @@ class BedMatrix(object):
             # Make header, write to output
             for i in range(self.bin_number):
                 str_ = "\t{}:{}".format(
-                    self.bin_start+i*self.bin_size,
-                    self.bin_start+(i+1)*self.bin_size-1
+                    self.bin_start + i * self.bin_size,
+                    self.bin_start + (i + 1) * self.bin_size - 1
                 )
                 OUTPUT.write(str_)
             OUTPUT.write("\n")
@@ -388,13 +388,13 @@ class BedMatrix(object):
             # Make header
             for i in range(self.bin_number):
                 OUTPUT.write("\t{}:{}".format(
-                    self.bin_start+i*self.bin_size,
-                    self.bin_start+(i+1)*self.bin_size-1
+                    self.bin_start + i * self.bin_size,
+                    self.bin_start + (i + 1) * self.bin_size - 1
                 ))
                 if OPPOSITE:
                     OPPOSITE.write("\t{}:{}".format(
-                        self.bin_start+i*self.bin_size,
-                        self.bin_start+(i+1)*self.bin_size-1
+                        self.bin_start + i * self.bin_size,
+                        self.bin_start + (i + 1) * self.bin_size - 1
                     ))
 
             OUTPUT.write("\n")
@@ -413,8 +413,8 @@ class BedMatrix(object):
                     combined_lines[feature] = ''
                     for i in range(len(plus_row_dict[feature])):
                         combined_lines[feature] += '\t' + str(self.checkInt(
-                                float(plus_row_dict[feature][i]) +
-                                float(minus_row_dict[feature][i])))
+                            float(plus_row_dict[feature][i]) +
+                            float(minus_row_dict[feature][i])))
 
             for feature in self.feature_order:
                 OUTPUT.write(feature)
@@ -462,9 +462,7 @@ class BedMatrix(object):
 def cli(bigwigs, feature_bed, output_matrix, anchor, bin_start, bin_number,
         bin_size, opposite_strand_fn, stranded_bigwigs, stranded_bed,
         chrom_sizes, temp_dir):
-    """
-    Generate matrices for stranded or unstranded bigWig matrices
-    """
+    """Generate matrices for stranded or unstranded bigWig matrices."""
     BedMatrix(bigwigs, feature_bed, output_matrix, anchor, bin_start,
               bin_number, bin_size, opposite_strand_fn, stranded_bigwigs,
               stranded_bed, chrom_sizes, temp_dir)

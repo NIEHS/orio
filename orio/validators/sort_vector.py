@@ -50,18 +50,16 @@ class SortVectorValidator(Validator):
                     fbs.append(line)
 
         if len(fbs) != len(svs):
-            self.add_error(
-                'Feature list length ({}) does not equal sort vector length'
-                .format(len(fbs), len(svs)))
+            self.add_error('Feature list length ({}) does not equal sort vector length'.format(
+                len(fbs), len(svs)))
             return
 
         for sv, fb in zip(svs, fbs):
             sv_id = sv.split('\t')[0]
             fl_id = fb.split('\t')[3]
             if sv_id != fl_id:
-                self.add_error(
-                   'Feature list ID ({}) does not match sort vector ID ({})'
-                   .format(fl_id, sv_id))
+                self.add_error('Feature list ID ({}) does not match sort vector ID ({})'.format(
+                    fl_id, sv_id))
 
     def validate(self):
         self.check_columns()

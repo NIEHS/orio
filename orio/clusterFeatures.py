@@ -13,7 +13,7 @@ class ClusterFeatures():
         self.matrix_list = matrix_list
         self.execute()
 
-    def readMatrixFilesIntoVectorMatrix(self):
+    def create_vector_matrix(self):
         headers = None
         vector_matrix = None
         row_names = []
@@ -55,37 +55,37 @@ class ClusterFeatures():
         self.row_names = row_names
         self.vector_matrix = vector_matrix
 
-    def performClustering(self):
+    def perform_clustering(self):
         whitened = whiten(self.vector_matrix)
         for i in range(2, 11):
             centroids, labels = kmeans2(whitened, i)
-            self.kmeans_results[i] = {
-                'centroids': centroids.tolist(),
-                'labels': labels.tolist()
-            }
+            self.kmeans_results[i] = dict(
+                centroids=centroids.tolist(),
+                labels=labels.tolist()
+            )
 
-    def writeJson(self, fn):
+    def write_json(self, fn):
+        d = dict(
+            kmeans_results=self.kmeans_results,
+            vector_matrix=self.vector_matrix,
+            bins=self.headers,
+            row_names=self.row_names
+        )
         with open(fn, 'w') as f:
-            json.dump({
-                'kmeans_results': self.kmeans_results,
-                'vector_matrix': self.vector_matrix,
-                'bins': self.headers,
-                'row_names': self.row_names
-            }, f, separators=(",", ": "))
+            json.dump(d, f, separators=(",", ": "))
 
     def execute(self):
         self.kmeans_results = {}
-        self.readMatrixFilesIntoVectorMatrix()
-        self.performClustering()
+        self.create_vector_matrix()
+        self.perform_clustering()
 
 
 @click.command()
 @click.argument('matrix_list_fn', type=str)
 @click.argument('output_json', type=str)
 def cli(matrix_list_fn, output_json):
-    """
-    Considering matrix files specified by a list, cluster features (rows) by
-    vectors derived from matrix content
+    r"""
+    Cluster features (rows) by vectors derived from matrix list.
 
     \b
     Arguments:
@@ -97,7 +97,6 @@ def cli(matrix_list_fn, output_json):
                             3) absolute path to matrix file
     - output_json:      Filename of output JSON
     """
-
     assert os.path.exists(matrix_list_fn)
     with open(matrix_list_fn) as f:
         matrix_list = [
@@ -106,7 +105,7 @@ def cli(matrix_list_fn, output_json):
         ]
 
     cf = ClusterFeatures(matrix_list)
-    cf.writeJson(output_json)
+    cf.write_json(output_json)
 
 
 if __name__ == '__main__':

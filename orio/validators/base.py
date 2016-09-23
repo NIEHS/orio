@@ -37,10 +37,10 @@ class Validator(object):
         return '\n'.join(set(self.validation_warnings))
 
 
-def get_validateFiles_path():
+def get_validate_files_path():
     path = os.path.join(utils.get_bin_path(), 'validateFiles')
     if not os.path.exists(path):
-        raise IOError('validateFiles not found, expected {}'.fo_rmat(path))
+        raise IOError('validateFiles not found, expected {}'.format(path))
     return path
 
 

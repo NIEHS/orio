@@ -12,12 +12,11 @@ class AnalysisValidator(Validator):
     MAX_WINDOW_SIZE = 100000
 
     # Possible 'empty' names used in a BED file
-    DUMMY_NAMES = ['.']
+    DUMMY_NAMES = ('.', )
 
-    def __init__(self, bin_anchor, bin_start,
-                 bin_number, bin_size, feature_bed,
-                 chrom_sizes, stranded_bed):
-
+    def __init__(self, bin_anchor, bin_start, bin_number,
+                 bin_size, feature_bed, chrom_sizes,
+                 stranded_bed):
         super().__init__()
 
         # Type checks
@@ -25,7 +24,6 @@ class AnalysisValidator(Validator):
         assert isinstance(bin_start, int)
         assert isinstance(bin_number, int)
         assert isinstance(bin_size, int)
-
         assert os.path.exists(feature_bed)
         assert os.path.exists(chrom_sizes)
 
@@ -39,33 +37,28 @@ class AnalysisValidator(Validator):
         self.stranded_bed = stranded_bed
 
     def validate(self):
-        self.checkInputDomains()
-        self.checkIfOutside()
+        self.check_input_domains()
+        self.check_if_outside()
 
-    def checkInputDomains(self):
-
+    def check_input_domains(self):
         if self.bin_size < self.MIN_BIN_SIZE:
-            self.add_error(
-                'Bin size {} less than minimum {}'.format(
-                    self.bin_size, self.MIN_BIN_SIZE))
+            self.add_error('Bin size {} less than minimum {}'.format(
+                self.bin_size, self.MIN_BIN_SIZE))
 
         window_size = self.bin_size * self.bin_number
         if window_size > self.MAX_WINDOW_SIZE:
-            self.add_error(
-                'Window size {} exceeds maximum {}'.format(
-                   window_size, self.MAX_WINDOW_SIZE))
+            self.add_error('Window size {} exceeds maximum {}'.format(
+                window_size, self.MAX_WINDOW_SIZE))
 
         if self.bin_number < self.MIN_BIN_NUMBER:
-            self.add_error(
-                'Bin number {} less than minimum {}'.format(
-                    self.bin_number, self.MIN_BIN_NUMBER))
+            self.add_error('Bin number {} less than minimum {}'.format(
+                self.bin_number, self.MIN_BIN_NUMBER))
 
         if self.bin_number > self.MAX_BIN_NUMBER:
-            self.add_error(
-                'Bin number {} exceeds maximum {}'.format(
-                    self.bin_number, self.MAX_BIN_NUMBER))
+            self.add_error('Bin number {} exceeds maximum {}'.format(
+                self.bin_number, self.MAX_BIN_NUMBER))
 
-    def readChrom(self, chrom_sizes_fn):
+    def read_chrom(self, chrom_sizes_fn):
         chrom_sizes = dict()
         with open(chrom_sizes_fn) as f:
             for line in f:
@@ -73,7 +66,7 @@ class AnalysisValidator(Validator):
                 chrom_sizes[chromosome] = int(size)
         return chrom_sizes
 
-    def checkHeader(self, line):
+    def check_header(self, line):
         # Check to see if line is header
         if line == '\n':
             return True
@@ -84,16 +77,15 @@ class AnalysisValidator(Validator):
         else:
             return False
 
-    def checkIfOutside(self):
-        outside_message = 'Feature window extends off chromosome. BED entry ' \
-            'will be removed from analysis.'
+    def check_if_outside(self):
+        outside_message = 'Feature window extends off chromosome. BED entry will be removed from analysis.'  # noqa
 
         window_size = self.bin_size * self.bin_number
-        chrom_sizes = self.readChrom(self.chrom_sizes_fn)
+        chrom_sizes = self.read_chrom(self.chrom_sizes_fn)
         entry_num = 0
         with open(self.feature_bed_fn) as f:
             for line in f:
-                if not self.checkHeader(line):
+                if not self.check_header(line):
                     bed_fields = len(line.strip().split())
                     chromosome, start, end = line.strip().split()[0:3]
                     start = int(start) + 1  # Convert from 0-based to 1-based
@@ -140,11 +132,9 @@ class AnalysisValidator(Validator):
 
                     chrome_size = chrom_sizes.get(chromosome)
                     if chrome_size is None:
-                        self.add_error(
-                            'Chromosome not found {}'.format(chromosome))
+                        self.add_error('Chromosome not found {}'.format(chromosome))
                     elif strand == '+' or strand == 'AMBIG':
-                        if window_start < 1 or \
-                                window_end > chrome_size:
+                        if window_start < 1 or window_end > chrome_size:
                             if entry_name:
                                 self.add_warning('{}: {}'.format(
                                     entry_name, outside_message))
@@ -152,8 +142,7 @@ class AnalysisValidator(Validator):
                                 self.add_warning('Entry number {}: {}'.format(
                                     str(entry_num), outside_message))
                     elif strand == '-':
-                        if window_end < 1 or \
-                                window_start > chrome_size:
+                        if window_end < 1 or window_start > chrome_size:
                             if entry_name:
                                 self.add_warning('{}: {}'.format(
                                     entry_name, outside_message))

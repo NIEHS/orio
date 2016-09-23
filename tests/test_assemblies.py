@@ -5,7 +5,7 @@ from orio import assemblies
 
 
 def test_cursor():
-    cursor = assemblies.get_UCSC_cursor()
+    cursor = assemblies.get_ucsc_cursor()
     cursor.close()
 
 
