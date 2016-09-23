@@ -112,17 +112,17 @@ class AnalysisValidator(Validator):
                     if self.bin_anchor == 'center':
                         if strand == '+' or strand == 'AMBIG':
                             window_start = center + self.bin_start
-                        if strand == '-':
+                        elif strand == '-':
                             window_start = center - self.bin_start
                     elif self.bin_anchor == 'start':
                         if strand == '+' or strand == 'AMBIG':
                             window_start = start + self.bin_start
-                        if strand == '-':
+                        elif strand == '-':
                             window_start = end - self.bin_start
                     elif self.bin_anchor == 'end':
                         if strand == '+' or strand == 'AMBIG':
                             window_start = end + self.bin_start
-                        if strand == '-':
+                        elif strand == '-':
                             window_start = start - self.bin_start
 
                     if strand == '+' or strand == 'AMBIG':
