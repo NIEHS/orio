@@ -70,7 +70,7 @@ class FeatureListValidator(Validator):
                     else:
                         contains_names = True
                         if feature_name in feature_names:
-                            self.add_error('Duplicate feature name: {}'.format(feature_name))
+                            self.add_error('Duplicate feature name: {}'.format(feature_name))  # noqa
                         else:
                             feature_names.add(feature_name)
 
@@ -86,17 +86,17 @@ class FeatureListValidator(Validator):
                     try:
                         chrom, start, end = line.strip().split()[0:3]
                     except(ValueError):
-                        self.add_error('Too few columns: {}'.format(line.strip()))
+                        self.add_error('Too few columns: {}'.format(line.strip()))  # noqa
                     else:
                         # Check if chrom in sizes file
                         if chrom not in sizes:
-                            self.add_error('Chromosome "{}" not in chromosome list'.format(chrom))
+                            self.add_error('Chromosome "{}" not in chromosome list'.format(chrom))  # noqa
                         # Check if entry is contained within chromosome
                         elif int(start) > sizes[chrom] or \
                                 int(end) > sizes[chrom] or \
                                 int(start) < 0 or \
                                 int(end) < 1:
-                            self.add_error('Entry not within chromosome: {}'.format(line.strip()))
+                            self.add_error('Entry not within chromosome: {}'.format(line.strip()))  # noqa
 
     def check_stranded(self):
         if self.stranded:
@@ -106,10 +106,10 @@ class FeatureListValidator(Validator):
                         try:
                             strand = line.strip().split()[5]
                         except(IndexError):
-                            self.add_error('Missing strand column in feature list: {}'.format(line.strip()))
+                            self.add_error('Missing strand column in feature list: {}'.format(line.strip()))  # noqa
                         else:
                             if strand != '+' and strand != '-':
-                                self.add_error('Strand not \'+\' or \'-\': {}'.format(line.strip()))
+                                self.add_error('Strand not \'+\' or \'-\': {}'.format(line.strip()))  # noqa
 
     def validate(self):
         self.set_number_columns()
