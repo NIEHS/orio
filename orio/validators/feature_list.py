@@ -8,7 +8,7 @@ class FeatureListValidator(Validator):
     # Possible 'empty' names used in a BED file
     DUMMY_NAMES = ['.']
 
-    def __init__(self, feature_list, chrom_sizes_file):
+    def __init__(self, feature_list, chrom_sizes_file, stranded):
 
         super().__init__()
 
@@ -17,6 +17,7 @@ class FeatureListValidator(Validator):
 
         self.feature_list = feature_list
         self.chrom_sizes_file = chrom_sizes_file
+        self.stranded = stranded
 
     @staticmethod
     def checkHeader(line):
@@ -97,7 +98,21 @@ class FeatureListValidator(Validator):
                                 int(end) < 1:
                             self.add_error('Entry not within chromosome: {}'.format(line.strip()))
 
+    def check_stranded(self):
+        if self.stranded:
+            with open(self.feature_list) as f:
+                for line in f:
+                    if not self.checkHeader(line):
+                        try:
+                            strand = line.strip().split()[5]
+                        except(IndexError):
+                            self.add_error('Missing strand column in feature list: {}'.format(line.strip()))
+                        else:
+                            if strand != '+' and strand != '-':
+                                self.add_error('Strand not \'+\' or \'-\': {}'.format(line.strip()))
+
     def validate(self):
         self.set_number_columns()
         self.check_bed_entries()
         self.check_unique_feature_names()
+        self.check_stranded()
