@@ -19,7 +19,7 @@ ORIO enables analysis of multiple NGS datasets considering a feature list of
 discrete genomic coordinates.  The results of this analysis may be dynamically
 displayed using the tools present in the companion `ORIO-web`_ framework.
 
-.. _`ORIO-web`: https://github.com/shapiromatron/orio-web
+.. _`ORIO-web`: https://github.com/niehs/orio-web
 
 Main functions
 --------------
@@ -30,7 +30,7 @@ sets is performed. Second, the NGS data sets are correlated based on
 these intersection values. The output of these steps may be dynamically
 visualized using `ORIO-web`_.
 
-.. _`ORIO-web`: https://github.com/shapiromatron/orio-web
+.. _`ORIO-web`: https://github.com/niehs/orio-web
 
 .. figure:: docs/orio_doc.png
    :alt:
