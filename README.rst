@@ -237,4 +237,4 @@ development environment::
 
     pip install -e .
 
-.. _`development mode`: http://python-packaging-user-guide.readthedocs.io/en/latest/distributing/#working-in-development-mode
+.. _`development mode`: https://pip.pypa.io/en/stable/reference/pip_install/#cmdoption-e
