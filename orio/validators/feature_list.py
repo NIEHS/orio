@@ -40,6 +40,13 @@ class FeatureListValidator(Validator):
                 sizes[chrom] = int(size)
         return sizes
 
+    def check_if_parseable(self):
+        try:
+            with open(self.feature_list) as f:
+                f.readlines()
+        except UnicodeDecodeError:
+            self.add_error('Invalid file format. Should be in BED text-file format.')
+
     def set_number_columns(self):
         # Find number of columns in bed
         self.number_columns = None
@@ -112,6 +119,9 @@ class FeatureListValidator(Validator):
                                 self.add_error('Strand not \'+\' or \'-\': {}'.format(line.strip()))  # noqa
 
     def validate(self):
+        self.check_if_parseable()
+        if self.validation_errors:
+            return
         self.set_number_columns()
         self.check_bed_entries()
         self.check_unique_feature_names()
