@@ -23,6 +23,14 @@ class SortVectorValidator(Validator):
         except ValueError:
             return False
 
+    def check_if_parseable(self):
+        try:
+            with open(self.sort_vector_fn) as f:
+                f.readlines()
+        except UnicodeDecodeError:
+            self.add_error('Invalid file format. Should be a tab-delimited '
+                           'text format with two columns.')
+
     def check_columns(self):
         column_check = True
         float_check = True
@@ -62,5 +70,8 @@ class SortVectorValidator(Validator):
                     fl_id, sv_id))
 
     def validate(self):
+        self.check_if_parseable()
+        if self.validation_errors:
+            return
         self.check_columns()
         self.check_ids()
