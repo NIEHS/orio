@@ -89,21 +89,53 @@ class FeatureListValidator(Validator):
         with open(self.feature_list) as f:
             for line in f:
                 if not self.checkHeader(line):
+                    valid = True
+
                     # Check for three columns
-                    try:
-                        chrom, start, end = line.strip().split()[0:3]
-                    except(ValueError):
-                        self.add_error('Too few columns: {}'.format(line.strip()))  # noqa
-                    else:
-                        # Check if chrom in sizes file
+                    if valid:
+                        try:
+                            chrom, start, end = line.strip().split()[0:3]
+                        except(ValueError):
+                            self.add_error(
+                                'Too few columns: {}'.format(line.strip()))
+                            valid = False
+
+                    # Check if chrom in sizes file
+                    if valid:
                         if chrom not in sizes:
-                            self.add_error('Chromosome "{}" not in chromosome list'.format(chrom))  # noqa
-                        # Check if entry is contained within chromosome
-                        elif int(start) > sizes[chrom] or \
-                                int(end) > sizes[chrom] or \
-                                int(start) < 0 or \
-                                int(end) < 1:
-                            self.add_error('Entry not within chromosome: {}'.format(line.strip()))  # noqa
+                            self.add_error(
+                                'Chromosome "{}" not in chromosome list'.format(chrom))  # noqa
+                            valid = False
+
+                    # Check if entry start is integer
+                    if valid:
+                        try:
+                            start = int(start)
+                        except(ValueError):
+                            self.add_error(
+                                'Row start is not a valid integer: {}'.format(line.strip()))  # noqa
+                            valid = False
+
+                    # Check if entry end is integer
+                    if valid:
+                        try:
+                            end = int(end)
+                        except(ValueError):
+                            self.add_error(
+                                'Row end is not a valid integer: {}'.format(line.strip()))  # noqa
+                            valid = False
+
+                    # Check if entry is contained within chromosome
+                    if valid:
+                        if any([
+                            start > sizes[chrom],
+                            end > sizes[chrom],
+                            start < 0,
+                            end < 1,
+                        ]):
+                            self.add_error(
+                                'Entry not within chromosome: {}'.format(line.strip()))  # noqa
+                            valid = False
 
     def check_stranded(self):
         if self.stranded:
