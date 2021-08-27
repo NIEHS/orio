@@ -18,3 +18,5 @@
 orio/bin/*
 !orio/bin/.gitkeep
 orio/data/*.gtf
+.idea/
+.python-version
