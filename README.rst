@@ -1,4 +1,4 @@
-ORIO: Online Resource for Integrative Omics
+cd /ORIO: Online Resource for Integrative Omics
 ===========================================
 
 ORIO (Online Resource for Integrative Omics) is an analysis platform for

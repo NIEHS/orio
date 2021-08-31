@@ -5,7 +5,7 @@ import platform
 from clint.textui import progress
 import requests
 
-from . import utils
+import utils
 
 
 REQUIRED_SOFTWARE = ('bigWigAverageOverBed', 'validateFiles', )
