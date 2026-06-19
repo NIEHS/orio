@@ -9,5 +9,5 @@ pytest-xdist==1.14
 
 # building
 
-requests==2.26.0
+requests==2.31.0
 clint==0.5.1
