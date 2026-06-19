@@ -1,6 +1,6 @@
 # computational
 scipy==1.7.1
-numpy==1.21.2
+numpy==1.22.0
 pandas==1.3.2
 
 # testing
